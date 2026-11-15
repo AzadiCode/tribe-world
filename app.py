@@ -55,7 +55,7 @@ def seed():
         b.append({"id": len(b) + 1, "type": "tree", "x": x, "z": z, "rot": rnd.choice([0, 90, 180, 270])})
     return {"_id": "main", "rev": 1, "last": time.time(), "country": {"name": "قبیله", "gov": ""},
             "stats": {"pop": 1, "money": 10_000_000, "food": 0.0, "subs": 0}, "story": {"reached": [], "values": {}},
-            "buildings": b, "events": [{"t": now_iso(), "text": "🏕️ یک زمین خالی، یک بنیان‌گذار و ۱۰ میلیون تومان. قبیله از اینجا شروع می‌شود."}], "next_id": len(b) + 1, **extras()}
+            "buildings": b, "events": [{"t": now_iso(), "text": "یک زمین خالی، یک بنیان‌گذار و ۱۰ میلیون تومان. قبیله از اینجا شروع می‌شود."}], "next_id": len(b) + 1, **extras()}
 
 
 def extras(): return {"citizens": {}, "chat": [], "chat_id": 0, "env": {"mode": "live", "hour": 12.0}}
@@ -118,7 +118,7 @@ def tick(d):
 def check_goals(d):
     for at, key, title in GOALS:
         if d["stats"]["subs"] >= at and key not in d["story"]["reached"]:
-            d["story"]["reached"].append(key); log_event(d, f"🗳️ به {at} نفر رسیدیم! {title} — منتظر رأی شما باشید.")
+            d["story"]["reached"].append(key); log_event(d, f"به {at} نفر رسیدیم! {title} — منتظر رأی شما باشید.")
 
 
 def log_event(d, text):
@@ -225,7 +225,7 @@ def add_building():
         check_cell(d, x, z)
         b = {"id": d["next_id"], "type": t, "x": x, "z": z, "rot": random.choice([0, 90, 180, 270])}
         d["next_id"] += 1; d["buildings"].append(b); d["stats"]["money"] -= cost
-        if t != "tree": log_event(d, f"🏗️ {CATALOG[t]} ساخته شد" + (f" (−{cost/1e6:g} میلیون تومان)." if cost else "."))
+        if t != "tree": log_event(d, f"{CATALOG[t]} ساخته شد" + (f" (−{cost/1e6:g} میلیون تومان)." if cost else "."))
         return b
     return jsonify(building=mutate(f))
 
@@ -237,7 +237,7 @@ def del_building(bid):
         b = next((i for i in d["buildings"] if i["id"] == bid), None)
         if not b: raise ValueError("پیدا نشد")
         d["buildings"].remove(b)
-        if b["type"] != "tree": log_event(d, f"🧱 {CATALOG[b['type']]} برداشته شد.")
+        if b["type"] != "tree": log_event(d, f"{CATALOG[b['type']]} برداشته شد.")
     mutate(f); return jsonify(ok=True)
 
 
@@ -272,7 +272,7 @@ def contribution():
     def f(d):
         apply_delta(d, {k: v * n for k, v in RULES[kind].items()})
         who = "مشترک جدید" if kind == "subscriber" else "مشارکت"
-        log_event(d, f"🎉 {n} {who}" + (f" — {str(j['note'])[:120]}" if j.get("note") else "") + " به قبیله پیوست.")
+        log_event(d, f"{n} {who}" + (f" — {str(j['note'])[:120]}" if j.get("note") else "") + " به قبیله پیوست.")
     mutate(f); return jsonify(ok=True)
 
 
@@ -283,8 +283,8 @@ def milestone():
     if key not in [g[1] for g in GOALS] or not val: raise ValueError("کلید یا مقدار نامعتبر")
     def f(d):
         d["story"]["values"][key] = val
-        if key == "name": d["country"]["name"] = val; log_event(d, f"🗳️ با رأی شما نام قبیله شد «{val}».")
-        else: d["country"]["gov"] = val; log_event(d, f"🗳️ نظام حکومت: {val}.")
+        if key == "name": d["country"]["name"] = val; log_event(d, f"با رأی شما نام قبیله شد «{val}».")
+        else: d["country"]["gov"] = val; log_event(d, f"نظام حکومت: {val}.")
     mutate(f); return jsonify(ok=True)
 
 
@@ -293,7 +293,7 @@ def milestone():
 def story_event():
     j = request.get_json(silent=True) or {}; text = str(j.get("text", "")).strip()[:200]
     if not text: raise ValueError("متن اتفاق خالی است")
-    def f(d): apply_delta(d, j.get("effects") or {}); log_event(d, "📜 " + text)
+    def f(d): apply_delta(d, j.get("effects") or {}); log_event(d, "" + text)
     mutate(f); return jsonify(ok=True)
 
 
