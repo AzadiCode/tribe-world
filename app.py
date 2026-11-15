@@ -32,8 +32,8 @@ else:
     log.warning("MONGO_URI تنظیم نشده؛ داده‌ها با هر ری‌استارت پاک می‌شوند")
 _mem = {}
 
-CATALOG = {"house": "خانه", "farm": "مزرعه", "market": "بازار", "road": "جاده", "tree": "درخت"}
-COST = {"house": 2_000_000, "farm": 1_500_000, "market": 3_000_000, "road": 100_000, "tree": 0}  # تومان
+CATALOG = {"house": "خانه", "farm": "مزرعه", "market": "بازار", "road": "جاده", "tree": "درخت", "hq": "دفتر مدیرعامل"}
+COST = {"house": 2_000_000, "farm": 1_500_000, "market": 3_000_000, "road": 100_000, "tree": 0, "hq": 5_000_000}  # تومان
 # قوانین داستان (مطابق ویدیو): هر فالو = ۱ نفر + ۱ میلیون تومان به خزانه
 RULES = {"subscriber": {"pop": 1, "money": 1_000_000, "subs": 1}, "contribution": {"pop": 1, "money": 1_000_000}}
 TIERS = [(0, "قبیله"), (500, "روستا"), (5000, "شهر"), (50000, "کشور")]   # آستانه‌ها پیشنهادی‌اند؛ تغییرشان بده
@@ -53,12 +53,14 @@ def seed():
         x, z = rnd.randint(-SIZE, SIZE - 1), rnd.randint(-SIZE, SIZE - 1)
         if (-10 < x < 11 and -7 < z < 7) or in_pond(x, z) or any(i["x"] == x and i["z"] == z for i in b): continue
         b.append({"id": len(b) + 1, "type": "tree", "x": x, "z": z, "rot": rnd.choice([0, 90, 180, 270])})
-    return {"_id": "main", "rev": 1, "last": time.time(), "country": {"name": "قبیله", "gov": ""},
+    d = {"_id": "main", "rev": 1, "last": time.time(), "country": {"name": "قبیله", "gov": ""},
             "stats": {"pop": 1, "money": 10_000_000, "food": 0.0, "subs": 0}, "story": {"reached": [], "values": {}},
             "buildings": b, "events": [{"t": now_iso(), "text": "یک زمین خالی، یک بنیان‌گذار و ۱۰ میلیون تومان. قبیله از اینجا شروع می‌شود."}], "next_id": len(b) + 1, **extras()}
+    ensure_hq(d)
+    return d
 
 
-def extras(): return {"citizens": {}, "chat": [], "chat_id": 0, "env": {"mode": "live", "hour": 12.0}}
+def extras(): return {"citizens": {}, "chat": [], "chat_id": 0, "env": {"mode": "live", "hour": 12.0}, "hq_made": False}
 
 
 def migrate(d):                                           # افزودن فیلدهای جدید به دیتابیس قدیمی
@@ -68,10 +70,27 @@ def migrate(d):                                           # افزودن فیل�
     return ch
 
 
+def ensure_hq(d):                                         # دفتر مدیرعامل: یک‌بار به‌صورت خودکار کنار مرکز ساخته می‌شود (بعدش با پنل جابه‌جا/حذف می‌شود)
+    if d.get("hq_made"): return False
+    d["hq_made"] = True
+    if any(b["type"] == "hq" for b in d["buildings"]): return True
+    at = {(b["x"], b["z"]): b for b in d["buildings"]}
+    for r in range(0, 8):
+        for x in range(-r, r + 1):
+            for z in range(-r, r + 1):
+                if max(abs(x), abs(z)) != r or in_pond(x, z): continue
+                o = at.get((x, z))
+                if o and o["type"] != "tree": continue
+                if o: d["buildings"].remove(o)
+                d["buildings"].append({"id": d["next_id"], "type": "hq", "x": x, "z": z, "rot": 0}); d["next_id"] += 1
+                return True
+    return True
+
+
 def load():
     d = col.find_one({"_id": "main"}) if col is not None else _mem.get("main")
     if not d: d = seed(); save(d)
-    elif fix_pond(d) | migrate(d): save(d)
+    elif fix_pond(d) | migrate(d) | ensure_hq(d): save(d)
     return d
 
 
@@ -219,6 +238,7 @@ def add_building():
     j = request.get_json(silent=True) or {}; t = j.get("type")
     if t not in CATALOG: raise ValueError("نوع ساختمان نامعتبر")
     def f(d):
+        if t == "hq" and any(i["type"] == "hq" for i in d["buildings"]): raise ValueError("دفتر مدیرعامل فقط یکی است")
         cost = 0 if j.get("free") else COST[t]
         if d["stats"]["money"] < cost: raise ValueError("پول خزانه کافی نیست")
         x, z = (int(j["x"]), int(j["z"])) if j.get("x") not in (None, "") and j.get("z") not in (None, "") else free_cell(d, t)

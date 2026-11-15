@@ -13,7 +13,7 @@ canvas{display:block;touch-action:none}svg{width:100%;height:100%;display:block}
 #hud{position:fixed;inset:0;pointer-events:none;padding:max(6px,env(safe-area-inset-top)) 6px max(6px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center}
 #res{display:flex;gap:4px;width:100%;max-width:300px}
 .chip{flex:1;position:relative;height:26px;border-radius:var(--r);padding:0 5px;display:flex;align-items:center;gap:5px;min-width:0}
-.chip .ic{flex:none;width:18px;height:18px;border-radius:5px;padding:3.5px;color:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3),inset 0 1px 1px rgba(255,255,255,.35)}
+.chip .ic,#quest .fl{flex:none;width:14px;height:14px;color:var(--cream);opacity:.88}.chip .ic svg,#quest .fl svg{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .chip .tx{min-width:0;display:flex;flex-direction:column}.chip b{font-size:11px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap}.chip small{font-size:8px;opacity:.65;line-height:1.1;white-space:nowrap}
 .chip .d{position:absolute;top:-3px;inset-inline-end:6px;font-size:9px;font-weight:800;color:var(--jade);animation:fl 1.6s ease-out forwards}
 @keyframes fl{to{transform:translateY(-12px);opacity:0}}
@@ -26,7 +26,7 @@ canvas{display:block;touch-action:none}svg{width:100%;height:100%;display:block}
 .btn{position:relative;width:26px;height:26px;border-radius:var(--r);padding:6px;color:var(--cream);cursor:pointer;border:1px solid var(--line)}.btn:after{content:'';position:absolute;inset:-3px}.btn:active{transform:scale(.94)}.btn.dim{opacity:.5}
 #bot{margin-top:auto;width:100%;max-width:300px;display:flex;flex-direction:column;gap:4px}
 #quest{border-radius:var(--r);padding:4px 7px;display:flex;align-items:center;gap:6px}
-#quest .fl{width:17px;height:17px;flex:none;border-radius:5px;padding:3.5px;background:linear-gradient(145deg,#ffd36b,#ff8a4c);color:#5a2a05}
+#quest .fl{color:var(--gold);opacity:1}
 #quest .tx{flex:1;min-width:0}#quest strong{display:block;font-size:10.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qh{display:flex;align-items:baseline;gap:8px}.qh strong{flex:1}.qh small{flex:none;white-space:nowrap}#bar{height:2.5px;border-radius:2px;background:#ffffff1f;margin:3px 0 1px;overflow:hidden}#bar u{display:block;height:100%;width:0;border-radius:2px;background:linear-gradient(90deg,var(--jade),var(--gold));transition:width .8s cubic-bezier(.2,.8,.2,1)}
 #quest small{font-size:8.5px;opacity:.7}
@@ -113,6 +113,10 @@ const GLOW=new THREE.MeshStandardMaterial({color:0xffe0a0,emissive:0xffb84d,emis
 const WALL=[0xe8dfca,0xdccfb2,0xeee4cf,0xd9c8a8],ROOF=[0xa3452f,0x8a3b2b,0x5f7482,0xb0683b],AWN=[0xc8553a,0xe0a43a,0x3f7f99,0x7a9a4a];
 const cyl=(g,rt,rb,h,c,px,py,pz,sg=8)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,sg),M(c));m.position.set(px,py+h/2,pz);return add(g,m)};
 const ball=(g,r,c,px,py,pz,d=1)=>{const m=new THREE.Mesh(new THREE.IcosahedronGeometry(r,d),F(c));m.position.set(px,py,pz);return add(g,m)};
+// ── دفتر مدیرعامل: با الهام از ظاهر بنیان‌گذار (کت تیره، دورخط و چشم‌های سبز نئونی)
+const HQD=M(0x16231e,.7),HQW=new THREE.MeshStandardMaterial({color:0x2a3d35,roughness:.8,emissive:0x0b2a1a,emissiveIntensity:.5}),GLm=new THREE.MeshBasicMaterial({color:0x39ff88}),OLm=new THREE.MeshBasicMaterial({color:0x2fd67a,side:THREE.BackSide}),GDm=new THREE.MeshBasicMaterial({color:0x0a5a30}),
+HQG=new THREE.MeshBasicMaterial({color:0x39ff88,transparent:true,opacity:.15,depthWrite:false,blending:THREE.AdditiveBlending}),HQGG=new THREE.CircleGeometry(1.5,28);let hqDish=null;
+const hb=(g,w,h,d,m,px,py,pz,ol)=>{const e=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);e.position.set(px,py+h/2,pz);if(ol){const o=new THREE.Mesh(e.geometry,OLm);o.scale.setScalar(1.04);e.add(o)}return add(g,e)};
 const build={
 house(g,b){const k=b.id;bx(g,1.5,.14,1.3,0x8d877b);bx(g,1.2,.8,1,WALL[k%4],0,.14);bx(g,1.26,.07,1.06,0xb5a98f,0,.14);gable(g,1.62,.72,1.4,ROOF[(k>>2)%4],.94);
 bx(g,.3,.52,.05,0x6b4326,0,.14,.52);bx(g,.4,.05,.09,0x4a3022,0,.66,.52);
@@ -124,6 +128,15 @@ market(g){bx(g,2,.06,1.4,0xb9ae96);for(let i=-1;i<=1;i++){const x=i*.66;bx(g,.55
 bx(g,.32,.06,.6,AWN[i+1],x-.16,.62);bx(g,.32,.06,.6,0xf2ead6,x+.16,.62);[-.26,.26].forEach(a=>[-.22,.22].forEach(c=>bx(g,.04,.56,.04,0x6b4a2b,x+a,.06,c)));
 for(let j=-1;j<=1;j++)ball(g,.07,[0xd94f3a,0xf0b13a,0x7cb342][(i+j+3)%3],x+j*.14,.53,0,0)}},
 road(g){roadMesh(g,0,0)},
+hq(g){hb(g,1.85,.08,1.7,HQD,0,0,0);hb(g,1.5,.78,1.2,HQW,0,.08,0,1);hb(g,1.1,.55,.9,HQW,-.1,.86,-.05,1);hb(g,1.18,.06,.98,HQD,-.1,1.41,-.05);
+hb(g,1.54,.03,1.24,GLm,0,.84,0);hb(g,1.14,.03,.94,GLm,-.1,1.47,-.05);
+hb(g,.3,.5,.05,HQD,0,.08,.6);hb(g,.38,.03,.06,GLm,0,.58,.6);[-.17,.17].forEach(x=>hb(g,.03,.5,.06,GLm,x,.08,.6));
+[-.46,.46].forEach(x=>{const r=new THREE.Mesh(new THREE.TorusGeometry(.12,.026,8,18),GLm);r.position.set(x,.56,.605);g.add(r);const d=new THREE.Mesh(new THREE.CircleGeometry(.1,16),GDm);d.position.set(x,.56,.607);g.add(d)});
+hb(g,.8,.09,.03,GLm,-.1,1.0,.405);
+cyl(g,.02,.02,.5,0x2f3338,.35,1.47,-.25,5);const dish=new THREE.Mesh(new THREE.SphereGeometry(.15,10,6,0,6.3,0,1.2),M(0x8b9a94,.5));dish.rotation.x=-.8;dish.position.set(.35,2.05,-.25);add(g,dish);hqDish=dish;
+const bl=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),GLm);bl.position.set(.35,2.0,-.25);g.add(bl);
+const gl=new THREE.Mesh(HQGG,HQG);gl.rotation.x=-Math.PI/2;gl.position.y=.1;g.add(gl)},
+
 tree(g,b){const k=b.id,sr=((k*9301+49297)%233280)/233280,s=.9+sr*.7,v=k%3;g.userData.sw=sr*6;cyl(g,.09*s,.13*s,.7*s,0x6e4c32,0,0,0,6);
 if(v===1)[[.8,.62],[1.25,.46],[1.62,.3]].forEach(([y,r])=>{const m=new THREE.Mesh(new THREE.ConeGeometry(r*s,.62*s,7),F(0x3f7a4a));m.position.y=y*s;add(g,m)});
 else[[0,1.05,0,.62],[.25,.85,.1,.42],[-.22,.9,-.1,.4]].forEach(([a,y,c,r],i)=>ball(g,r*s,v?[0x6a9f4f,0x7aae55,0x5e9448][i]:[0x4f8f4a,0x5f9f55,0x3f7d45][i],a*s,y*s,c*s))}};
@@ -136,7 +149,7 @@ const DEF=['آرش','سارا','نیما','مینا','کیان','لیلا','پا
 const MODES={move:'✋ جابه‌جایی: ساختمان را بکش و رها کن',build:'🏗️ ساخت: روی زمین بزن (جاده: بکش)',rot:'🔄 چرخش: روی ساختمان بزن',del:'🗑️ حذف: روی ساختمان بزن',name:'🏷️ نام مستعار: روی آدم بزن',say:'💬 پیام: روی آدم بزن'};
 // ── رابط
 document.body.insertAdjacentHTML('afterbegin','<div id="nts"></div>');
-document.body.insertAdjacentHTML('beforeend',`<div id="adm"><div class="btn e g" data-m="move" title="جابه‌جایی">✋</div><div class="btn e g" data-m="build" title="ساخت">🏗️</div><div class="btn e g" data-m="rot" title="چرخش">🔄</div><div class="btn e g" data-m="del" title="حذف">🗑️</div><div class="btn e g" data-m="name" title="نام مستعار">🏷️</div><div class="btn e g" data-m="say" title="پیام">💬</div><div class="btn e g" id="btm" title="زمان">⏱️</div></div><div id="pal" class="g"><span data-t="house" class="on">🏠</span><span data-t="farm">🌾</span><span data-t="market">🏪</span><span data-t="road">🛣️</span><span data-t="tree">🌲</span><label><input type="checkbox" id="fr" checked> رایگان</label></div><div id="md" class="g"><p id="mt"></p><input id="mi" maxlength="120"><div><button id="mok">تأیید</button><button id="mno">انصراف</button></div></div>`);
+document.body.insertAdjacentHTML('beforeend',`<div id="adm"><div class="btn e g" data-m="move" title="جابه‌جایی">✋</div><div class="btn e g" data-m="build" title="ساخت">🏗️</div><div class="btn e g" data-m="rot" title="چرخش">🔄</div><div class="btn e g" data-m="del" title="حذف">🗑️</div><div class="btn e g" data-m="name" title="نام مستعار">🏷️</div><div class="btn e g" data-m="say" title="پیام">💬</div><div class="btn e g" id="btm" title="زمان">⏱️</div></div><div id="pal" class="g"><span data-t="house" class="on">🏠</span><span data-t="hq">🏢</span><span data-t="farm">🌾</span><span data-t="market">🏪</span><span data-t="road">🛣️</span><span data-t="tree">🌲</span><label><input type="checkbox" id="fr" checked> رایگان</label></div><div id="md" class="g"><p id="mt"></p><input id="mi" maxlength="120"><div><button id="mok">تأیید</button><button id="mno">انصراف</button></div></div>`);
 $('side').insertAdjacentHTML('beforeend','<div id="bn" class="btn g" title="نمایش/پنهان نام‌ها"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.9 3.1-6.2 7-6.2s7 2.3 7 6.2"/></svg></div><div id="bm" class="btn g" title="قطع صدا"></div><div id="ba" class="btn g" title="ابزار مدیر"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg></div>');
 $('tier').insertAdjacentHTML('beforeend','<span id="clk"></span>');
 // ── جاده‌های متصل + چراغ خیابان
@@ -198,7 +211,7 @@ else if(T&&mode==='say'){const v=await ask('پیام بالای سر «'+nameOf(
 if(h.b){h.g.userData.t=.55;
 if(T&&mode==='rot')api('/api/admin/building/'+h.b.id,'PUT',{x:h.b.x,z:h.b.z,rot:(h.b.rot+90)%360}).catch(()=>0);
 else if(T&&mode==='del'){if(confirm('حذف شود؟'))api('/api/admin/building/'+h.b.id,'DELETE').catch(()=>0)}
-else if(!mode)toast(W.catalog[h.b.type]||'')}}
+else if(!mode){toast(bInfo(h.b));ownerHi(h.b)}}}
 R.domElement.addEventListener('pointerdown',e=>{dn={x:e.clientX,y:e.clientY,t:performance.now()};if(!T||!mode)return;
 if(mode==='move'){const h=pickAt(e);if(h.b){drag={g:h.g,b:h.b,c:[h.b.x,h.b.z]};ctl.enabled=false;cur.visible=true;cur.position.set(h.b.x*CELL,.12,h.b.z*CELL);cur.material.color.setHex(0x3ddc97)}}
 else if(mode==='build'){ctl.enabled=false;painted.clear();paintAt(e)}},true);
@@ -232,7 +245,7 @@ fL=new THREE.PointLight(0x39ff88,.3,5);fL.position.set(0,.9,.2);g.add(fL)}
 function addB(b){const g=new THREE.Group();build[b.type]?.(g,b);g.position.set(b.x*CELL,0,b.z*CELL);g.rotation.y=b.type==='road'?0:b.rot*Math.PI/180;g.scale.setScalar(.01);Object.assign(g.userData,{b,t:0});scene.add(g);objs.set(b.id,g)}
 // ═══ ناوبری v5: شبکهٔ ۰٫۵ واحدی با «هزینه» (جاده ارزان، چمن گران) + A* ⇒ آدم‌ها کنار جاده‌ها راه می‌روند و وارد آب/ساختمان نمی‌شوند
 const NS=.5,NN=180,NO=-45,nav=new Uint8Array(NN*NN),cost=new Float32Array(NN*NN),gs=new Float32Array(NN*NN),prv=new Int32Array(NN*NN);
-let homes=[],mkts=[],farms=[],treeSp=[],roadC=[],ctr=[0,0],RAD=10;const roadSet=new Set(),homeById=new Map();
+let regH=[],hqH=null,homes=[],mkts=[],farms=[],treeSp=[],roadC=[],ctr=[0,0],RAD=10;const roadSet=new Set(),homeById=new Map();
 const ci=v=>Math.floor((v-NO)/NS),cw=i=>NO+(i+.5)*NS,walk=(x,z)=>{const i=ci(x),j=ci(z);return i>=0&&j>=0&&i<NN&&j<NN&&!nav[j*NN+i]};
 const pondM=(x,z)=>((x+17)/9.2)**2+((z+17)/6.6)**2<1; // برکه + حاشیهٔ امن ~۱ واحد
 function blk(x0,x1,z0,z1){for(let j=Math.max(0,ci(z0));j<=Math.min(NN-1,ci(z1));j++)for(let i=Math.max(0,ci(x0));i<=Math.min(NN-1,ci(x1));i++)nav[j*NN+i]=1}
@@ -240,13 +253,13 @@ function rebuildNav(w){nav.fill(0);cost.fill(1.5);homes=[];mkts=[];farms=[];tree
 for(let j=0;j<NN;j++)for(let i=0;i<NN;i++){const x=cw(i),z=cw(j);if(Math.abs(x)>38.5||Math.abs(z)>38.5||pondM(x,z))nav[j*NN+i]=1}
 const trees=[];let sx=0,sz=0,n=0;
 for(const b of w.buildings){const X=b.x*CELL,Z=b.z*CELL,a=b.rot*Math.PI/180,q=b.rot%180?1:0,fx=Math.sin(a),fz=Math.cos(a);occ.add(b.x+','+b.z);
-if(b.type==='house'){const hx=q?.9:1,hz=q?1:.9;blk(X-hx,X+hx,Z-hz,Z+hz);const h={id:b.id,x:X,z:Z,fx,fz};homes.push(h);homeById.set(b.id,h)}
+if(b.type==='house'||b.type==='hq'){const hx=q?.9:1,hz=q?1:.9;blk(X-hx,X+hx,Z-hz,Z+hz);const h={id:b.id,x:X,z:Z,fx,fz,hq:b.type==='hq'};homes.push(h);homeById.set(b.id,h)}
 else if(b.type==='market'){const hx=q?.5:1.1,hz=q?1.1:.5;blk(X-hx,X+hx,Z-hz,Z+hz);mkts.push({x:X+fx*1.25,z:Z+fz*1.25,cx:X,cz:Z})}
 else if(b.type==='tree'){blk(X-.4,X+.4,Z-.4,Z+.4);trees.push([X,Z])}
 else if(b.type==='farm')farms.push({x:X,z:Z});
 else if(b.type==='road'){roadC.push({x:X,z:Z});roadSet.add(b.x+','+b.z)}
 if(b.type!=='tree'){sx+=X;sz+=Z;n++}}
-ctr=n?[sx/n,sz/n]:[0,0];let E=0;for(const b of w.buildings)if(b.type!=='tree')E=Math.max(E,Math.hypot(b.x*CELL-ctr[0],b.z*CELL-ctr[1]));
+regH=homes.filter(h=>!h.hq).sort((a,b)=>a.id-b.id);hqH=homes.find(h=>h.hq)||null;ctr=n?[sx/n,sz/n]:[0,0];let E=0;for(const b of w.buildings)if(b.type!=='tree')E=Math.max(E,Math.hypot(b.x*CELL-ctr[0],b.z*CELL-ctr[1]));
 RAD=Math.min(34,Math.max(8+2.6*Math.log2(1+((w.stats&&w.stats.pop)||1)),E+5)); // با رشد جمعیت، محدودهٔ حرکت بزرگ‌تر می‌شود
 for(const{x:X,z:Z}of roadC)for(let j=ci(Z-1.5);j<=ci(Z+1.5);j++)for(let i=ci(X-1.5);i<=ci(X+1.5);i++){if(i<0||j<0||i>=NN||j>=NN)continue;const d=Math.max(Math.abs(cw(i)-X),Math.abs(cw(j)-Z)),k=j*NN+i;cost[k]=Math.min(cost[k],d<=1?.5:1)}
 for(const[X,Z]of trees)for(const[a,b]of[[.8,0],[-.8,0],[0,.8],[0,-.8]])if(walk(X+a,Z+b)){treeSp.push({x:X+a,z:Z+b,tx:X,tz:Z});break}
@@ -261,6 +274,13 @@ while(hp.length&&it++<14000){const c=hpop();if(c===t)break;const x=c%NN,z=(c/NN)
 for(const[dx,dz]of D8){const nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>=NN||nz>=NN)continue;const n=nz*NN+nx;if(nav[n])continue;if(dx&&dz&&(nav[z*NN+nx]||nav[nz*NN+x]))continue;const ng=gc+cost[n]*(dx&&dz?1.414:1);if(ng<gs[n]){gs[n]=ng;prv[n]=c;hpush(ng+H(nx,nz),n)}}}
 if(prv[t]<0)return null;const raw=[];for(let c=t;c!==s;c=prv[c])raw.push([cw(c%NN),cw((c/NN)|0)]);raw.reverse();
 const out=[];for(let i=0;i<raw.length;i++){const a=raw[i-1]||[sx,sz],b=raw[i],n=raw[i+1];if(n&&Math.abs((b[0]-a[0])*(n[1]-b[1])-(b[1]-a[1])*(n[0]-b[0]))<1e-6)continue;out.push(b)}return out}
+// ═══ مالکیت خانه‌ها: دفتر مدیرعامل = بنیان‌گذار؛ بقیه به ترتیب یک خانه برای هر نفر (اگر خانه کم باشد، چند نفر مشترک)
+const homeFor=i=>i===0&&hqH?hqH:regH.length?regH[(i-(hqH?1:0))%regH.length]:null;
+const ownersIdx=h=>{const r=[];for(let i=0;i<cits.length;i++)if(homeFor(i)===h)r.push(i);return r};
+function bInfo(b){const h=homeById.get(b.id);if(!h)return W.catalog[b.type]||'';const o=ownersIdx(h);
+if(h.hq)return(W.catalog.hq||'دفتر مدیرعامل')+' · '+nameOf(0);
+if(!o.length)return'خانهٔ خالی (هنوز صاحبی ندارد)';const nm=o.slice(0,3).map(nameOf).join('، ');return'خانهٔ '+nm+(o.length>3?' و '+fa(o.length-3)+' نفر دیگر':'')}
+function ownerHi(b){const h=homeById.get(b.id);if(!h)return;ownersIdx(h).slice(0,2).forEach(i=>{const c=cits[i];if(c&&!c.hid)bubble(c,h.hq?'دفتر منه':'اینجا خونهٔ منه!',2600)})}
 // شهروندان (اولی = بنیان‌گذار)
 const cits=[],skin=[0xf1c9a0,0xd9a577,0xb67d54,0x8d5a3b],cloth=[0xc86b3c,0x4a7f9a,0xd9a93a,0x94527f,0x5f9a54,0x7b6bb0],hairC=[0x2b1d14,0x4a3020,0x1c1c1c,0x8a6a3a],rr=a=>a[Math.random()*a.length|0];
 function mkCit(i){const g=new THREE.Group(),f=i===0,cl=f?0x2d3a55:rr(cloth);g.rotation.order='YXZ';
@@ -287,7 +307,7 @@ if(!p){c.act='';c.st='stay';c.tm=1+Math.random()*2;return}c.path=p;if(p.length)c
 function roadGoal(c){const r=rp(roadC);if(!r)return goTo(c,ctr[0],ctr[1]);goTo(c,r.x+(Math.random()-.5)*1.4,r.z+(Math.random()-.5)*1.4,'road')}
 function newGoal(c){const g=c.g,px=g.position.x,pz=g.position.z,nt=NT>.55,dk=NT>.2,tr=c.tr,o=[];c.pt=null;c.fa=null;c.act='';
 if(Math.hypot(px-ctr[0],pz-ctr[1])>RAD*1.05){if(roadC.length&&Math.random()<.6)return roadGoal(c);const f=freeNear(ctr[0],ctr[1],4);return goTo(c,f[0],f[1])} // افسار: از مرکز دور نشو
-const h=homes.length?homes[c.i%homes.length]:null;
+const h=homeFor(c.i);
 if(h)o.push([nt?9:dk?2.5:.4+.7*(1-tr.so),'home']);
 if(!nt&&farms.length)o.push([2.4*(.3+1.4*tr.f),'farm']);
 if(!nt&&mkts.length)o.push([2*(.3+1.4*tr.s),'shop']);
@@ -350,7 +370,7 @@ c.d=d;c.ix+=d[0];c.iz+=d[1];c.tx=c.ix*CELL-d[1]*LANE;c.tz=c.iz*CELL+d[0]*LANE;re
 function spawnCar(){const cand=roadC.filter(r=>DIRS.some(([a,b])=>hasR(r.x/CELL+a,r.z/CELL+b)));if(!cand.length)return;const r=rr(cand),g=mkCar();g.scale.setScalar(.01);scene.add(g);
 const c={g,ix:r.x/CELL,iz:r.z/CELL,d:null,tx:0,tz:0,hd:0,v:0,sp:1.5+Math.random()*.7,life:30+Math.random()*45,sc:0,stuck:0,out:0};if(!pickNext(c)){scene.remove(g);return}
 g.position.set(c.tx-c.d[0]*CELL,.06,c.tz-c.d[1]*CELL);c.hd=Math.atan2(-c.d[1],c.d[0]);cars.push(c)}
-function stepCars(dt,t){HL.emissiveIntensity=.15+2.2*NT;
+function stepCars(dt,t){HL.emissiveIntensity=.15+2.2*NT;HQG.opacity=.1+.3*NT;if(hqDish)hqDish.rotation.y=t*.7;
 const want=roadC.length>=3?Math.min(6,1+(roadC.length/5|0)):0,tg=Math.round(want*(1-NT*.75));
 if((spT-=dt)<=0){spT=2+Math.random()*6;if(cars.length<tg)spawnCar()}
 for(let i=cars.length-1;i>=0;i--){const c=cars[i],g=c.g;if((c.life-=dt)<=0||(cars.length>tg+1&&Math.random()<dt*.2))c.out=1;
@@ -364,15 +384,15 @@ if(!bl)for(const o of cars)if(o!==c&&ck(o.g.position.x,o.g.position.z,.75,.3)){b
 c.stuck=bl?c.stuck+dt:0;c.v+=((!bl||c.stuck>5?c.sp:0)-c.v)*Math.min(1,dt*4);
 g.position.x+=cs*c.v*dt;g.position.z-=sn*c.v*dt;g.position.y=.06+(c.v>.2?Math.sin(t*18+i)*.004:0);g.rotation.y=c.hd}}
 let rev=-1,seenEv=null,tmT;const tgt={pop:0,money:0,food:0},disp={pop:0,money:0,food:0},last={};
-const IC={pop:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor"/></svg>',money:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="currentColor"/><circle cx="12" cy="12" r="6" fill="none" stroke="#0005" stroke-width="1.5"/><path d="M9 10h6M12 10v6" stroke="#0006" stroke-width="1.8" stroke-linecap="round"/></svg>',food:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22V9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><ellipse cx="8.5" cy="10" rx="2" ry="3.4" transform="rotate(-28 8.5 10)"/><ellipse cx="15.5" cy="10" rx="2" ry="3.4" transform="rotate(28 15.5 10)"/><ellipse cx="9" cy="15" rx="2" ry="3.2" transform="rotate(-28 9 15)"/><ellipse cx="15" cy="15" rx="2" ry="3.2" transform="rotate(28 15 15)"/><ellipse cx="12" cy="5.5" rx="1.9" ry="3.2"/></svg>',flag:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 21V4M6 5c4-2 6 2 12 0v8c-6 2-8-2-12 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'};
+const IC={pop:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.4"/><path d="M5.5 20c.6-3.8 3.2-6 6.5-6s5.9 2.2 6.5 6"/></svg>',money:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.6"/></svg>',food:'<svg viewBox="0 0 24 24"><path d="M12 21V8.5M12 8.5C10.6 7.4 10.2 5.8 10.2 4c1.4 1 1.8 2.6 1.8 4.5zM12 8.5c1.4-1.1 1.8-2.7 1.8-4.5-1.4 1-1.8 2.6-1.8 4.5zM12 13.5c-2.6 0-4-1.6-4-4 2.6 0 4 1.6 4 4zM12 13.5c2.6 0 4-1.6 4-4-2.6 0-4 1.6-4 4zM12 18c-2.6 0-4-1.6-4-4 2.6 0 4 1.6 4 4zM12 18c2.6 0 4-1.6 4-4-2.6 0-4 1.6-4 4z"/></svg>',flag:'<svg viewBox="0 0 24 24"><path d="M6 21V4M6 5c4-2 6 2 12 0v8c-6 2-8-2-12 0"/></svg>'};
 const RS=[['pop','جمعیت','نفر','linear-gradient(145deg,#4be8a8,#12a06b)',0],['money','خزانه','میلیون تومان','linear-gradient(145deg,#ffd36b,#e89a14)',1],['food','غذا','کیلوگرم','linear-gradient(145deg,#ffa36b,#e5562a)',0]];
-$('res').innerHTML=RS.map(([k,a,u,bg])=>`<div class="chip g" id="c_${k}"><div class="ic" style="background:${bg}">${IC[k]}</div><div class="tx"><b id="v_${k}">۰</b><small>${u}</small></div></div>`).join('');
+$('res').innerHTML=RS.map(([k,a,u,bg])=>`<div class="chip g" id="c_${k}"><div class="ic">${IC[k]}</div><div class="tx"><b id="v_${k}">۰</b><small>${u}</small></div></div>`).join('');
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(tmT);tmT=setTimeout(()=>e.classList.remove('on'),4500)}
 function bump(k,d){const e=document.createElement('span');e.className='d';e.textContent=(d>0?'+':'')+fa(d,k==='money'?1:0);$('c_'+k).appendChild(e);setTimeout(()=>e.remove(),1600)}
 function sync(w){W=w;rev=w.rev;const ids=new Set(w.buildings.map(b=>b.id));
 for(const[id,g]of objs)if(!ids.has(id)){scene.remove(g);objs.delete(id)}
 for(const b of w.buildings){const g=objs.get(b.id);if(!g)addB(b);else if(g.userData.b.x!==b.x||g.userData.b.z!==b.z||g.userData.b.rot!==b.rot){g.position.set(b.x*CELL,0,b.z*CELL);if(b.type!=='road')g.rotation.y=b.rot*Math.PI/180;g.userData.b=b}}
-const hs=w.buildings.filter(b=>b.type==='house');plan.visible=!hs.length;
+plan.visible=!w.buildings.some(b=>b.type==='hq');
 rebuildNav(w);roads(w);
 const s=w.stats;tgt.pop=s.pop;tgt.money=s.money/1e6;tgt.food=s.food;
 const ti=w.tiers.indexOf(w.tier);$('tn').textContent=w.tier;$('path').innerHTML=w.tiers.map((t,i)=>`<i class="${i<ti?'past':i===ti?'on':''}"></i>`).join('<u></u>');
