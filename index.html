@@ -212,7 +212,7 @@ $('pal').onclick=e=>{const s=e.target.closest('[data-t]');if(s){bt=s.dataset.t;$
 $('bn').onclick=()=>{namesOn=!namesOn;toast(namesOn?'نام‌ها نمایش داده می‌شود':'نام‌ها پنهان شد')};
 $('ba').onclick=async()=>{if(!T){const k=await ask('رمز مدیر (ADMIN_KEY)','',1);if(!k)return;try{const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k})}),j=await r.json();if(!r.ok)return toast(j.error||'رمز اشتباه است');T=localStorage.tk=j.token}catch(_){return toast('خطا در اتصال')}}setAdm(!admOn)};
 $('btm').onclick=async()=>{const e=W.env||{mode:'live'},seq=[['live',0,'🕒 زمان زنده'],['lapse',0,'⏩ گذر سریع روز'],['fixed',12,'☀️ ظهر ثابت'],['fixed',19,'🌇 غروب ثابت'],['fixed',23,'🌙 شب ثابت']],i=seq.findIndex(s=>s[0]===e.mode&&(e.mode!=='fixed'||Math.round(e.hour)===s[1])),n=seq[(i+1)%seq.length];toast(n[2]);api('/api/admin/env','POST',{mode:n[0],hour:n[1]}).catch(()=>0)};
-if(T)setAdm(1);if(!T&&!new URLSearchParams(location.search).has('admin'))$('ba').style.display='none';
+if(!new URLSearchParams(location.search).has('admin'))$('ba').style.display='none';else if(T)setAdm(1);
 // ── ظاهر بنیان‌گذار: هکر نئونی (پالتوی تاریک، گاگل، چشم سبز، دورخط درخشان)
 let fL=null;
 function founderLook(c){const g=c.g,DK=new THREE.MeshStandardMaterial({color:0x16231e,roughness:.7}),CT=new THREE.MeshStandardMaterial({color:0x2a3d35,roughness:.8,emissive:0x0b2a1a,emissiveIntensity:.5,side:THREE.DoubleSide}),GL=new THREE.MeshBasicMaterial({color:0x39ff88}),OL=new THREE.MeshBasicMaterial({color:0x2fd67a,side:THREE.BackSide});
