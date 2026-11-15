@@ -17,6 +17,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY") or ADMIN_KEY or "dev-only"
 SIZE = 20                                                  # نیم‌اندازه‌ی نقشه (خانه)
 DAY = int(os.environ.get("DAY_SECONDS", "600"))            # طول یک «روز بازی» به ثانیه‌ی واقعی
 FOOD_PRICE, FOOD_PER_PERSON, FARM_YIELD, MARKET_INCOME = 20000, 0.5, 10, 200000
+TZ_NAME = os.environ.get("TZ_NAME", "Asia/Tehran")        # منطقه‌ی زمانی ساعت زنده‌ی دنیا
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 logging.basicConfig(level=logging.INFO)
@@ -54,13 +55,23 @@ def seed():
         b.append({"id": len(b) + 1, "type": "tree", "x": x, "z": z, "rot": rnd.choice([0, 90, 180, 270])})
     return {"_id": "main", "rev": 1, "last": time.time(), "country": {"name": "قبیله", "gov": ""},
             "stats": {"pop": 1, "money": 10_000_000, "food": 0.0, "subs": 0}, "story": {"reached": [], "values": {}},
-            "buildings": b, "events": [{"t": now_iso(), "text": "🏕️ یک زمین خالی، یک بنیان‌گذار و ۱۰ میلیون تومان. قبیله از اینجا شروع می‌شود."}], "next_id": len(b) + 1}
+            "buildings": b, "events": [{"t": now_iso(), "text": "🏕️ یک زمین خالی، یک بنیان‌گذار و ۱۰ میلیون تومان. قبیله از اینجا شروع می‌شود."}], "next_id": len(b) + 1, **extras()}
+
+
+def extras(): return {"citizens": {}, "chat": [], "chat_id": 0, "env": {"mode": "live", "hour": 12.0}}
+
+
+def migrate(d):                                           # افزودن فیلدهای جدید به دیتابیس قدیمی
+    ch = False
+    for k, v in extras().items():
+        if k not in d: d[k] = v; ch = True
+    return ch
 
 
 def load():
     d = col.find_one({"_id": "main"}) if col is not None else _mem.get("main")
     if not d: d = seed(); save(d)
-    elif fix_pond(d): save(d)
+    elif fix_pond(d) | migrate(d): save(d)
     return d
 
 
@@ -125,6 +136,7 @@ def view(d):
     return {"rev": d["rev"], "country": d["country"], "stats": d["stats"], "capacity": capacity(d),
             "buildings": d["buildings"], "events": d["events"][:20], "catalog": CATALOG, "cost": COST, "day": DAY,
             "tier": [n for at, n in TIERS if d["stats"]["subs"] >= at][-1], "tiers": [n for _, n in TIERS],
+            "citizens": d["citizens"], "chat": d["chat"][-12:], "env": d["env"], "tz": TZ_NAME,
             "goals": [{"at": a, "key": k, "title": t, "value": d["story"]["values"].get(k)} for a, k, t in GOALS]}
 
 
@@ -282,6 +294,38 @@ def story_event():
     j = request.get_json(silent=True) or {}; text = str(j.get("text", "")).strip()[:200]
     if not text: raise ValueError("متن اتفاق خالی است")
     def f(d): apply_delta(d, j.get("effects") or {}); log_event(d, "📜 " + text)
+    mutate(f); return jsonify(ok=True)
+
+
+@app.put("/api/admin/citizen/<int:i>")
+@admin_only
+def set_citizen(i):                                       # نام مستعار آدم‌ها (خالی = پیش‌فرض)
+    name = str((request.get_json(silent=True) or {}).get("name", "")).strip()[:20]
+    if not 0 <= i < 500: raise ValueError("شناسه نامعتبر")
+    def f(d):
+        if name: d["citizens"][str(i)] = {"name": name}
+        else: d["citizens"].pop(str(i), None)
+    mutate(f); return jsonify(ok=True)
+
+
+@app.post("/api/admin/say")
+@admin_only
+def say():                                                # پیام بالای سر یک آدم (cid خالی = تصادفی)
+    j = request.get_json(silent=True) or {}; text = str(j.get("text", "")).strip()[:120]
+    if not text: raise ValueError("پیام خالی است")
+    cid = int(j["cid"]) if j.get("cid") not in (None, "") else -1
+    def f(d):
+        d["chat_id"] += 1; d["chat"] = (d["chat"] + [{"id": d["chat_id"], "cid": cid, "text": text}])[-40:]
+    mutate(f); return jsonify(ok=True)
+
+
+@app.post("/api/admin/env")
+@admin_only
+def set_env():                                            # live = ساعت واقعی | fixed = ساعت ثابت | lapse = گذر سریع روز
+    j = request.get_json(silent=True) or {}; mode = j.get("mode", "live")
+    if mode not in ("live", "fixed", "lapse"): raise ValueError("حالت نامعتبر")
+    hour = float(j.get("hour") or 0) % 24
+    def f(d): d["env"] = {"mode": mode, "hour": hour}
     mutate(f); return jsonify(ok=True)
 
 
