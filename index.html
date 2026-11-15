@@ -39,7 +39,8 @@ canvas{display:block;touch-action:none}svg{width:100%;height:100%;display:block}
 #nts{position:fixed;inset:0;pointer-events:none;overflow:hidden}
 .nt{position:fixed;left:0;top:0;width:max-content;display:flex;flex-direction:column;align-items:center;gap:3px;will-change:transform;transform-origin:50% 100%}
 .nt b{font-size:9.5px;font-weight:600;padding:1px 7px;border-radius:99px;background:rgba(10,28,30,.55);color:#fff3d6;white-space:nowrap}
-.nt.f b{background:linear-gradient(145deg,#ffd36b,#ffb02e);color:#4a2a05;font-weight:800}
+.nt.f b{background:rgba(6,18,14,.85);color:#39ff88;font-weight:800;text-shadow:0 0 6px #39ff88;box-shadow:0 0 8px #39ff88aa,inset 0 0 0 1px #39ff8866}
+.nt.f .bb{background:#07130f;color:#8dffbd;box-shadow:0 0 0 1px #39ff88,0 0 12px #39ff8888}.nt.f .bb:after{border-top-color:#07130f}
 .bb{max-width:150px;padding:5px 10px;border-radius:14px;background:#fffaf0;color:#2b2218;font-size:11px;line-height:1.6;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.3);position:relative;margin-bottom:5px;animation:pp .28s cubic-bezier(.2,1.6,.4,1);transition:opacity .4s}
 .bb:after{content:'';position:absolute;bottom:-5px;left:50%;margin-left:-5px;border:5px solid transparent;border-bottom:0;border-top-color:#fffaf0}
 .bb.ms{background:#fff3c4;box-shadow:0 0 0 2px #ffb02e,0 4px 12px rgba(0,0,0,.35);font-weight:600}.bb.ms:after{border-top-color:#fff3c4}
@@ -165,13 +166,15 @@ const tv=new THREE.Vector3();
 const nameOf=i=>(W&&W.citizens&&W.citizens[i]&&W.citizens[i].name)||(i===0?'بنیان‌گذار':DEF[(i-1)%DEF.length]+(i>DEF.length?' '+fa(Math.ceil(i/DEF.length)):''));
 function names(){cits.forEach(c=>c.nb.textContent=nameOf(c.i))}
 function bubble(c,text,ms=5000,big){const o=c.el.querySelector('.bb');if(o)o.remove();const b=document.createElement('div');b.className='bb'+(big?' ms':'');b.textContent=text;c.el.prepend(b);clearTimeout(c.bt);c.bt=setTimeout(()=>{b.style.opacity=0;setTimeout(()=>b.remove(),450)},ms)}
-function react(c){c.rx=1.2;c.path=[];c.act='';c.wait=2.6;const g=c.g;g.rotation.y=Math.atan2(cam.position.x-g.position.x,cam.position.z-g.position.z);bubble(c,pickR(['👋','😄','❤️','سلام!','😊','من اینجام!','🙋','خوش اومدی']),2600)}
+function react(c){if(c.i===0)c.gl=.6;c.rx=1.2;c.path=[];c.act='';c.wait=2.6;const g=c.g;g.rotation.y=Math.atan2(cam.position.x-g.position.x,cam.position.z-g.position.z);bubble(c,pickR(['👋','😄','❤️','سلام!','😊','من اینجام!','🙋','خوش اومدی']),2600)}
 function chatSync(w){if(!w.chat)return;const mx=w.chat.reduce((a,m)=>Math.max(a,m.id),0);if(lastChat<0)lastChat=mx;else for(const m of w.chat)if(m.id>lastChat){const c=cits[m.cid>=0&&m.cid<cits.length?m.cid:Math.random()*cits.length|0];if(c)bubble(c,m.text,7000,1)}lastChat=Math.max(lastChat,mx)}
 function tags(){const hw=innerWidth/2,hh=innerHeight/2;for(const c of cits){tv.copy(c.g.position);tv.y+=c.g.scale.y*1.1;const d=cam.position.distanceTo(tv);tv.project(cam);const ok=tv.z<1&&Math.abs(tv.x)<1.15&&Math.abs(tv.y)<1.15&&d<75;c.el.style.display=ok?'':'none';if(ok){c.el.style.transform=`translate(${(tv.x*hw+hw).toFixed(1)}px,${(hh-tv.y*hh).toFixed(1)}px) translate(-50%,-100%) scale(${Math.max(.62,Math.min(1.05,30/d)).toFixed(2)})`;c.nb.style.display=namesOn&&d<44?'':'none'}}}
 function envStep(dt){const e=W&&W.env||{mode:'live'};
 if(QH!==null)H=+QH;else if(e.mode==='fixed')H=+e.hour;else if(e.mode==='lapse')H=((+e.hour||0)+performance.now()/2500)%24;else if((hT-=dt)<=0){hT=1;H=realHour()}
 if(Math.abs(H-eh)>.002){eh=H;applyEnv(H);const hh=Math.floor(H),mm=Math.floor((H-hh)*60),s=cpx((hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm),ic=H<5||H>=19.5?'🌙':H<7.5?'🌅':H<17?'☀️':'🌇';if(s+ic!==clkTxt){clkTxt=s+ic;$('clk').textContent=ic+' '+s}}
 for(const r of turbs)r.rotation.z-=dt*1.1;
+if(fL)fL.intensity=.35+1.6*NT;
+{const c0=cits[0];if(c0&&c0.gl>0){c0.gl-=dt;c0.g.scale.set(1.3+(Math.random()-.5)*.25,1.3+(Math.random()-.5)*.15,1.3);c0.g.visible=Math.random()>.12;if(c0.gl<=0){c0.g.scale.setScalar(1.3);c0.g.visible=true}}}
 if((tk-=dt)<=0){tk=4+Math.random()*5;const c=cits[Math.random()*cits.length|0];if(c&&!c.el.querySelector('.bb'))bubble(c,pickR(NT>.6?TN:TD),3600)}
 tags()}
 // ── ابزار مدیر (جابه‌جایی، ساخت، چرخش، حذف، نام، پیام)
@@ -209,7 +212,21 @@ $('pal').onclick=e=>{const s=e.target.closest('[data-t]');if(s){bt=s.dataset.t;$
 $('bn').onclick=()=>{namesOn=!namesOn;toast(namesOn?'نام‌ها نمایش داده می‌شود':'نام‌ها پنهان شد')};
 $('ba').onclick=async()=>{if(!T){const k=await ask('رمز مدیر (ADMIN_KEY)','',1);if(!k)return;try{const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k})}),j=await r.json();if(!r.ok)return toast(j.error||'رمز اشتباه است');T=localStorage.tk=j.token}catch(_){return toast('خطا در اتصال')}}setAdm(!admOn)};
 $('btm').onclick=async()=>{const e=W.env||{mode:'live'},seq=[['live',0,'🕒 زمان زنده'],['lapse',0,'⏩ گذر سریع روز'],['fixed',12,'☀️ ظهر ثابت'],['fixed',19,'🌇 غروب ثابت'],['fixed',23,'🌙 شب ثابت']],i=seq.findIndex(s=>s[0]===e.mode&&(e.mode!=='fixed'||Math.round(e.hour)===s[1])),n=seq[(i+1)%seq.length];toast(n[2]);api('/api/admin/env','POST',{mode:n[0],hour:n[1]}).catch(()=>0)};
-if(T)setAdm(1);
+if(T)setAdm(1);if(!T&&!new URLSearchParams(location.search).has('admin'))$('ba').style.display='none';
+// ── ظاهر بنیان‌گذار: هکر نئونی (پالتوی تاریک، گاگل، چشم سبز، دورخط درخشان)
+let fL=null;
+function founderLook(c){const g=c.g,DK=new THREE.MeshStandardMaterial({color:0x101a17,roughness:.7}),CT=new THREE.MeshStandardMaterial({color:0x1c2a25,roughness:.8,side:THREE.DoubleSide}),GL=new THREE.MeshBasicMaterial({color:0x39ff88}),OL=new THREE.MeshBasicMaterial({color:0x39ff88,side:THREE.BackSide});
+const ol=(m,k=1.1)=>{const o=new THREE.Mesh(m.geometry,OL);o.scale.setScalar(k);m.add(o);return m};
+for(const m of [...g.children]){const p=m.geometry&&m.geometry.parameters;if(!p)continue;if(p.radius===.128)m.visible=false;else if(p.radius===.12&&m.geometry.type==='SphereGeometry'){m.material=DK;ol(m,1.07)}else if(p.radius===.014){m.material=GL;m.scale.set(3,3.6,1.3)}}
+c.body.material=CT;ol(c.body,1.08);
+[c.lL,c.lR].forEach(l=>{l.children[0].material=DK;const b=new THREE.Mesh(new THREE.BoxGeometry(.11,.1,.17),DK);b.position.set(0,-.26,.02);b.castShadow=true;ol(b,1.18);l.add(b)});
+[c.aL,c.aR].forEach(a=>{a.children[0].material=CT});
+const coat=new THREE.Mesh(new THREE.CylinderGeometry(.15,.27,.42,10),CT);coat.position.y=.36;coat.castShadow=true;ol(coat,1.06);g.add(coat);
+const col=new THREE.Mesh(new THREE.CylinderGeometry(.17,.11,.15,10,1,true),CT);col.position.y=.68;g.add(col);
+const gp=new THREE.Group(),rim=new THREE.TorusGeometry(.048,.013,6,14);[-.058,.058].forEach(x=>{const r=new THREE.Mesh(rim,GL);r.position.set(x,0,0);gp.add(r);const l=new THREE.Mesh(new THREE.CircleGeometry(.04,12),new THREE.MeshBasicMaterial({color:0x0a5a30}));l.position.set(x,0,.002);gp.add(l)});
+gp.position.set(0,.9,.075);gp.rotation.x=-.45;g.add(gp);
+const st=new THREE.Mesh(new THREE.TorusGeometry(.088,.01,5,20),DK);st.rotation.x=Math.PI/2;st.position.y=.89;g.add(st);
+fL=new THREE.PointLight(0x39ff88,.4,7);fL.position.set(0,.9,.2);g.add(fL)}
 function addB(b){const g=new THREE.Group();build[b.type]?.(g,b);g.position.set(b.x*CELL,0,b.z*CELL);g.rotation.y=b.type==='road'?0:b.rot*Math.PI/180;g.scale.setScalar(.01);Object.assign(g.userData,{b,t:0});scene.add(g);objs.set(b.id,g)}
 // ناوبری: شبکهٔ ۰٫۵ واحدی؛ خانه/بازار/درخت/برکه مسدودند ⇒ آدم‌ها دیگر داخل ساختمان نمی‌روند
 const NS=.5,NN=180,NO=-45,nav=new Uint8Array(NN*NN),prv=new Int32Array(NN*NN),que=new Int32Array(NN*NN);let spots=[];
@@ -238,7 +255,7 @@ const hr=new THREE.Mesh(new THREE.SphereGeometry(.128,14,8,0,6.3,0,1.45),M(f?0x3
 [-.045,.045].forEach(x=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.014,6,5),M(0x1a1a1a));e.position.set(x,.8,.108);g.add(e)});
 const limb=(w,h,c,px,py)=>{const p=new THREE.Group(),m=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),M(c));m.position.y=-h/2;add(p,m);p.position.set(px,py,0);g.add(p);return p};
 const c={g,body,lL:limb(.08,.28,0x3b3f4e,-.06,.3),lR:limb(.08,.28,0x3b3f4e,.06,.3),aL:limb(.06,.26,cl,-.17,.62),aR:limb(.06,.26,cl,.17,.62),path:[],ph:Math.random()*6,wait:Math.random()*2,sp:.8+Math.random()*.5,act:''};
-if(f){g.scale.setScalar(1.3);cyl(g,.1,.12,.1,0xffc247,0,.9,0,10);bx(g,.26,.4,.03,0xa83a32,0,.3,-.13)}
+if(f){g.scale.setScalar(1.3);founderLook(c)}
 const hb=new THREE.Mesh(new THREE.SphereGeometry(.5,6,5),new THREE.MeshBasicMaterial({visible:false}));hb.position.y=.5;g.add(hb);c.i=i;g.userData.cit=c;const el=document.createElement('div');el.className='nt'+(f?' f':'');el.innerHTML='<b></b>';$('nts').appendChild(el);c.el=el;c.nb=el.firstChild;c.nb.textContent=nameOf(i);
 const p=freeNear(0,0,12);g.position.set(p[0],0,p[1]);scene.add(g);return c}
 function newGoal(c){const px=c.g.position.x,pz=c.g.position.z;let tx,tz,act='';
