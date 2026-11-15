@@ -43,11 +43,14 @@ RES = ("pop", "money", "food", "subs")
 def now_iso(): return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def in_pond(x, z): return ((x * 2 + 17) / 8.6) ** 2 + ((z * 2 + 17) / 6) ** 2 < 1.15   # برکه؛ سلول‌ها → مختصات دنیا (×۲)
+
+
 def seed():
     rnd, b = random.Random(7), []
     while len(b) < 110:
         x, z = rnd.randint(-SIZE, SIZE - 1), rnd.randint(-SIZE, SIZE - 1)
-        if (-10 < x < 11 and -7 < z < 7) or (-13 < x < -4 and -13 < z < -5) or any(i["x"] == x and i["z"] == z for i in b): continue
+        if (-10 < x < 11 and -7 < z < 7) or in_pond(x, z) or any(i["x"] == x and i["z"] == z for i in b): continue
         b.append({"id": len(b) + 1, "type": "tree", "x": x, "z": z, "rot": rnd.choice([0, 90, 180, 270])})
     return {"_id": "main", "rev": 1, "last": time.time(), "country": {"name": "قبیله", "gov": ""},
             "stats": {"pop": 1, "money": 10_000_000, "food": 0.0, "subs": 0}, "story": {"reached": [], "values": {}},
@@ -57,7 +60,18 @@ def seed():
 def load():
     d = col.find_one({"_id": "main"}) if col is not None else _mem.get("main")
     if not d: d = seed(); save(d)
+    elif fix_pond(d): save(d)
     return d
+
+
+def fix_pond(d):                                          # ساختمان‌های قدیمیِ روی برکه جابه‌جا/حذف می‌شوند
+    ch = False
+    for b in list(d["buildings"]):
+        if in_pond(b["x"], b["z"]):
+            ch = True
+            if b["type"] == "tree": d["buildings"].remove(b)
+            else: b["x"], b["z"] = free_cell(d, b["type"])
+    return ch
 
 
 def save(d):
@@ -176,13 +190,14 @@ def free_cell(d, t):
     for r in range(0, SIZE * 2):
         for x in range(-r, r + 1):
             for z in range(-r, r + 1):
-                if max(abs(x), abs(z)) == r and (x, z) not in used and -SIZE <= x < SIZE and -SIZE <= z < SIZE:
+                if max(abs(x), abs(z)) == r and (x, z) not in used and -SIZE <= x < SIZE and -SIZE <= z < SIZE and not in_pond(x, z):
                     return x, z
     raise ValueError("جایی خالی نیست")
 
 
 def check_cell(d, x, z, ignore=None):
     if not (-SIZE <= x < SIZE and -SIZE <= z < SIZE): raise ValueError("خارج از نقشه")
+    if in_pond(x, z): raise ValueError("اینجا برکه است")
     if any(b["x"] == x and b["z"] == z and b["id"] != ignore for b in d["buildings"]): raise ValueError("این خانه پر است")
 
 
