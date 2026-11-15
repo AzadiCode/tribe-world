@@ -17,7 +17,8 @@ input{width:90px}input.w{width:100%}button{background:var(--ember);color:#14182b
 <section><h2>🎬 ثبت مشترک / مشارکت یوتیوب</h2><div class="row"><select id="ck"><option value="subscriber">مشترک جدید</option><option value="contribution">مشارکت</option></select><input id="cn" type="number" value="1" min="1"><input class="w" id="cnote" placeholder="یادداشت (نام مشارکت‌کننده…)" style="flex:1"><button onclick="contrib()">ثبت</button></div></section>
 <section><h2>⚖️ تغییر جمعیت و منابع (عدد منفی = کاهش)</h2><div class="row" id="adj"></div><div class="row"><input class="w" id="anote" placeholder="یادداشت برای اتفاقات (اختیاری)" style="flex:1"><button onclick="adjust()">اعمال</button></div><div class="row"><input class="w" id="name" placeholder="نام کشور" style="flex:1"><button class="s" onclick="rename()">تغییر نام</button></div></section>
 <section><h2>📜 اتفاق داستانی</h2><input class="w" id="et" placeholder="مثلاً: سیل مزارع را خراب کرد"><div class="row"><input id="ef" type="number" placeholder="غذا ±"><input id="em" type="number" placeholder="پول ±"><input id="ep" type="number" placeholder="جمعیت ±"><button onclick="story()">اعمال اتفاق</button></div></section>
-<section><h2>🏗️ ساخت ساختمان</h2><div class="row"><select id="bt"></select><input id="bx" type="number" placeholder="x (خالی=خودکار)"><input id="bz" type="number" placeholder="z"><button onclick="addB()">بساز</button></div></section>
+<section><h2>🗳️ نتیجه رأی‌گیری مراحل داستان</h2><div id="goals"></div></section>
+<section><h2>🏗️ ساخت ساختمان</h2><div class="row"><select id="bt"></select><input id="bx" type="number" placeholder="x (خالی=خودکار)"><input id="bz" type="number" placeholder="z"><label><input type="checkbox" id="free" style="width:auto"> رایگان</label><button onclick="addB()">بساز</button></div></section>
 <section><h2>🧱 ساختمان‌ها</h2><div id="list"></div></section></div>
 <script>
 const $=id=>document.getElementById(id);let T=sessionStorage.tk||'',W=null;
@@ -25,11 +26,11 @@ const msg=(t,e)=>{const m=$('msg');m.textContent=t;m.className=e?'err':'';m.styl
 async function api(p,m='GET',b){const r=await fetch(p,{method:m,headers:{'Content-Type':'application/json','X-Admin-Token':T},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(r.status===401&&T){logout();}if(!r.ok){msg(j.error||'خطا',1);throw 0}return j}
 function logout(){T='';sessionStorage.tk='';$('login').hidden=false;$('panel').hidden=true}
 async function login(){try{const j=await api('/api/admin/login','POST',{key:$('key').value});T=j.token;sessionStorage.tk=T;show()}catch(e){}}
-const R={pop:'👥 جمعیت',money:'💰 پول',food:'🌾 غذا',wood:'🪵 چوب',stone:'🪨 سنگ',subs:'▶️ مشترکان'};
+const R={pop:'👥 جمعیت',money:'💰 خزانه (تومان)',food:'🌾 غذا (کیلو)',subs:'▶️ مشترکان'};
 $('adj').innerHTML=Object.entries(R).map(([k,v])=>`<label>${v}<br><input id="a_${k}" type="number" placeholder="±"></label>`).join('');
 async function load(){W=await (await fetch('/api/world')).json();const s=W.stats;
 $('st').innerHTML=`${W.country.name} — `+Object.entries(R).map(([k,v])=>`${v}: <b>${Math.round(s[k])}</b>`).join(' · ')+` (ظرفیت ${W.capacity})`;
-$('bt').innerHTML=Object.entries(W.catalog).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+$('goals').innerHTML=W.goals.map(g=>`<div class="b"><span>${g.at} نفر: ${g.title} ${g.value?'✅ '+g.value:''}</span><span>${W.stats.subs>=g.at?`<button onclick="ms('${g.key}')">ثبت نتیجه</button>`:'هنوز نرسیده'}</span></div>`).join('');$('bt').innerHTML=Object.entries(W.catalog).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
 $('list').innerHTML=W.buildings.filter(b=>b.type!=='road'&&b.type!=='tree'||false).concat(W.buildings.filter(b=>b.type==='road'||b.type==='tree')).map(b=>`<div class="b"><span>${W.catalog[b.type]} #${b.id} (${b.x}, ${b.z})</span><span><button class="s" onclick="mv(${b.id},${b.x},${b.z})">جابه‌جایی</button><button onclick="del(${b.id})">حذف</button></span></div>`).join('')}
 async function show(){$('login').hidden=true;$('panel').hidden=false;try{await load()}catch(e){}}
 const done=async t=>{msg(t);await load()};
@@ -37,7 +38,8 @@ async function contrib(){await api('/api/admin/contribution','POST',{kind:$('ck'
 async function adjust(){const b={note:$('anote').value};for(const k in R)b[k]=+$('a_'+k).value||0;await api('/api/admin/adjust','POST',b);for(const k in R)$('a_'+k).value='';$('anote').value='';done('اعمال شد ✅')}
 async function rename(){if($('name').value){await api('/api/admin/adjust','POST',{name:$('name').value});done('نام تغییر کرد ✅')}}
 async function story(){await api('/api/admin/event','POST',{text:$('et').value,effects:{food:+$('ef').value,money:+$('em').value,pop:+$('ep').value}});$('et').value='';done('اتفاق ثبت شد ✅')}
-async function addB(){await api('/api/admin/building','POST',{type:$('bt').value,x:$('bx').value,z:$('bz').value});done('ساخته شد ✅')}
+async function addB(){await api('/api/admin/building','POST',{type:$('bt').value,x:$('bx').value,z:$('bz').value,free:$('free').checked});done('ساخته شد ✅')}
+async function ms(k){const v=prompt(k==='name'?'اسم انتخاب‌شده قبیله:':'نظام حکومت (پادشاهی / جمهوری):');if(v){await api('/api/admin/milestone','POST',{key:k,value:v});done('ثبت شد ✅')}}
 async function del(id){if(confirm('حذف شود؟')){await api('/api/admin/building/'+id,'DELETE');done('حذف شد')}}
 async function mv(id,x,z){const v=prompt('مختصات جدید (x,z)',x+','+z);if(!v)return;const [nx,nz]=v.split(',').map(Number);await api('/api/admin/building/'+id,'PUT',{x:nx,z:nz});done('جابه‌جا شد ✅')}
 if(T)show();

@@ -5,85 +5,102 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>جهان زنده قبیله</title>
 <style>
-:root{--night:#14182b;--sand:#e9dcc0;--moss:#7fb069;--ember:#e8793a}
-*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#cfe3ea;font-family:Tahoma,"Segoe UI",sans-serif;color:var(--sand)}
-canvas{display:block}
-.glass{background:rgba(20,24,43,.82);backdrop-filter:blur(6px);border-radius:14px}
-#top{position:fixed;top:max(8px,env(safe-area-inset-top));left:8px;right:8px;display:flex;flex-direction:column;gap:6px;pointer-events:none}
-#title{align-self:flex-start;padding:8px 14px;font-size:20px;font-weight:700;letter-spacing:.5px}
-#title small{font-weight:400;font-size:12px;opacity:.7;margin-inline-start:8px}
-#stats{display:flex;flex-wrap:wrap;gap:6px}
-.st{padding:6px 10px;font-size:13px;display:flex;gap:6px;align-items:baseline}
-.st b{font-size:16px;color:#fff}.st.ok b{color:var(--moss)}.st.warn b{color:var(--ember)}
-#ev{position:fixed;bottom:max(8px,env(safe-area-inset-bottom));right:8px;left:8px;max-width:420px;padding:10px 12px;max-height:34vh;overflow:auto;font-size:13px;line-height:1.7}
-#ev h3{margin:0 0 4px;font-size:13px;color:var(--ember)}#ev div{padding:2px 0;border-top:1px solid rgba(233,220,192,.12)}
-#ev time{opacity:.5;font-size:11px;margin-inline-end:6px}
-#dot{position:fixed;top:max(14px,env(safe-area-inset-top));left:14px;width:9px;height:9px;border-radius:50%;background:var(--moss)}
-#dot.off{background:var(--ember)}
-@media(max-width:520px){#ev{max-height:26vh;font-size:12px}}
+:root{--ink:#1f2a3a;--teal:#1aa39a;--gold:#f2b632;--card:rgba(255,255,255,.94)}
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#bfe3d0;font-family:Tahoma,"Segoe UI",sans-serif;color:var(--ink)}
+canvas{display:block;touch-action:none}
+.c{background:var(--card);border-radius:14px;box-shadow:0 3px 10px rgba(20,40,40,.18)}
+#top{position:fixed;top:max(8px,env(safe-area-inset-top));left:8px;right:8px;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+#crumb{display:flex;gap:4px;padding:5px 10px;font-size:13px;align-items:center}
+#crumb span{padding:2px 9px;border-radius:99px;opacity:.55}#crumb span.on{background:var(--teal);color:#fff;opacity:1;font-weight:700}
+#stats{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.st{padding:6px 12px;font-size:12px;text-align:center;min-width:92px}.st b{display:block;font-size:17px}.st small{opacity:.6}
+#goal{position:fixed;left:8px;right:8px;bottom:max(64px,calc(env(safe-area-inset-bottom) + 56px));margin:auto;max-width:400px;padding:10px 14px;font-size:13px;text-align:center;border:2px dashed #e89b3c}
+#goal i{display:block;height:8px;border-radius:9px;background:#eadfca;margin-top:6px;overflow:hidden}#goal i u{display:block;height:100%;background:linear-gradient(90deg,#f2b632,#e8793a);transition:width .6s}
+#cap{position:fixed;left:8px;right:8px;bottom:max(10px,env(safe-area-inset-bottom));margin:auto;max-width:440px;padding:12px 16px;font-size:15px;text-align:center;background:rgba(31,42,58,.92);color:#fff;border-radius:14px;min-height:46px}
+.fab{position:fixed;top:max(10px,env(safe-area-inset-top));width:40px;height:40px;border:0;font-size:18px;cursor:pointer}
+#bs{left:10px}#be{left:58px}
+#ev{position:fixed;top:60px;left:10px;width:min(320px,calc(100% - 20px));max-height:50vh;overflow:auto;padding:10px 12px;font-size:12.5px;line-height:1.7;display:none}
+#ev div{padding:3px 0;border-top:1px solid #0001}#ev time{opacity:.5;font-size:11px;margin-inline-end:6px}
+#dot{position:fixed;right:10px;bottom:6px;width:8px;height:8px;border-radius:50%;background:var(--teal)}#dot.off{background:#d9534f}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
 <body>
-<div id="dot" title="اتصال زنده"></div>
-<div id="top"><div id="title" class="glass"><span id="cn">قبیله</span><small>جهان زنده</small></div><div id="stats"></div></div>
-<div id="ev" class="glass"><h3>اتفاقات اخیر</h3><div id="evl">…</div></div>
+<div id="top"><div id="crumb" class="c"></div><div id="stats"></div></div>
+<button id="bs" class="fab c" title="داستان">📖</button><button id="be" class="fab c" title="اتفاقات">📜</button>
+<div id="ev" class="c"></div><div id="goal" class="c"></div><div id="cap">…</div><div id="dot"></div>
 <script type="module">
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
-const CELL=2, fa=n=>Number(n).toLocaleString('fa-IR',{maximumFractionDigits:0});
-const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled=true;document.body.prepend(renderer.domElement);
-const scene=new THREE.Scene();scene.background=new THREE.Color(0xcfe3ea);scene.fog=new THREE.Fog(0xcfe3ea,70,150);
-const cam=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,.5,300);cam.position.set(34,40,34);
-const ctl=new OrbitControls(cam,renderer.domElement);
-Object.assign(ctl,{enableDamping:true,maxPolarAngle:1.15,minDistance:14,maxDistance:90,screenSpacePanning:false});
-scene.add(new THREE.HemisphereLight(0xffffff,0x8fae7a,.85));
-const sun=new THREE.DirectionalLight(0xfff0d0,1.4);sun.position.set(30,50,20);sun.castShadow=true;
-sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-50,right:50,top:50,bottom:-50,far:150});scene.add(sun);
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(400,400),new THREE.MeshLambertMaterial({color:0x9ccc72}));
-ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
-const isle=new THREE.Mesh(new THREE.BoxGeometry(82,1,82),new THREE.MeshLambertMaterial({color:0x8dbf62}));isle.position.y=-.5;isle.receiveShadow=true;scene.add(isle);
-const mats={};const M=c=>mats[c]||(mats[c]=new THREE.MeshLambertMaterial({color:c,flatShading:true}));
-function B(w,h,d,c,x=0,y=0,z=0){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));m.position.set(x,y+h/2,z);m.castShadow=m.receiveShadow=true;return m}
-function C(r,h,c,x=0,y=0,z=0,seg=8,r2=null){const m=new THREE.Mesh(new THREE.CylinderGeometry(r2??r,r,h,seg),M(c));m.position.set(x,y+h/2,z);m.castShadow=true;return m}
-function roof(w,h,c,y){const m=new THREE.Mesh(new THREE.ConeGeometry(w,h,4),M(c));m.rotation.y=Math.PI/4;m.position.y=y+h/2;m.castShadow=true;return m}
+const $=id=>document.getElementById(id),CELL=2,fa=(n,d=0)=>Number(n).toLocaleString('fa-IR',{maximumFractionDigits:d});
+const R=new THREE.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,2));R.setSize(innerWidth,innerHeight);
+R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.05;document.body.prepend(R.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xbfe3d0);scene.fog=new THREE.Fog(0xbfe3d0,60,130);
+const cam=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.5,250);cam.position.set(15,20,19);
+const ctl=new OrbitControls(cam,R.domElement);Object.assign(ctl,{enableDamping:true,maxPolarAngle:1.2,minPolarAngle:.35,minDistance:9,maxDistance:60,screenSpacePanning:false});
+scene.add(new THREE.HemisphereLight(0xffffff,0x7fae6a,1.0));
+const sun=new THREE.DirectionalLight(0xfff1d6,2.4);sun.position.set(18,34,12);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-34,right:34,top:34,bottom:-34,near:5,far:90});sun.shadow.bias=-.0004;sun.shadow.normalBias=.06;scene.add(sun);
+// زمین: تکسچر چمن (یک سطح، بدون هم‌پوشانی ⇒ بدون پرپر)
+const cv=document.createElement('canvas');cv.width=cv.height=256;const x=cv.getContext('2d');x.fillStyle='#8fcb63';x.fillRect(0,0,256,256);
+for(let i=0;i<900;i++){x.fillStyle=['#82c158','#9bd36c','#7ab552','#a6d97a'][i%4];x.globalAlpha=.5;x.beginPath();x.arc(Math.random()*256,Math.random()*256,2+Math.random()*7,0,7);x.fill()}
+const tex=new THREE.CanvasTexture(cv);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(36,36);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=4;
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(300,300),new THREE.MeshStandardMaterial({map:tex,roughness:1}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+const mats={};const M=(c,r=.8)=>mats[c+'_'+r]||(mats[c+'_'+r]=new THREE.MeshStandardMaterial({color:c,roughness:r}));
+const add=(g,m)=>{m.castShadow=m.receiveShadow=true;g.add(m);return m};
+const bx=(g,w,h,d,c,px=0,py=0,pz=0)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));m.position.set(px,py+h/2,pz);return add(g,m)};
+// دکور: برکه، سنگ، گل
+const pond=new THREE.Mesh(new THREE.CircleGeometry(5.5,40),new THREE.MeshStandardMaterial({color:0x4db6dc,roughness:.15,metalness:.1}));pond.rotation.x=-Math.PI/2;pond.position.set(-17,.04,-17);pond.scale.set(1.3,1,.9);scene.add(pond);
+const rim=new THREE.Mesh(new THREE.RingGeometry(5.5,6.3,40),new THREE.MeshStandardMaterial({color:0xb9e3a0,roughness:1}));rim.rotation.x=-Math.PI/2;rim.position.copy(pond.position);rim.position.y=.03;rim.scale.copy(pond.scale);scene.add(rim);
+let s=5;const rnd=()=>(s=(s*16807)%2147483647)/2147483647;
+const fl=new THREE.InstancedMesh(new THREE.SphereGeometry(.09,5,4),new THREE.MeshStandardMaterial({roughness:.6}),400),dm=new THREE.Object3D();
+for(let i=0;i<400;i++){dm.position.set((rnd()-.5)*78,.08,(rnd()-.5)*78);dm.updateMatrix();fl.setMatrixAt(i,dm.matrix);fl.setColorAt(i,new THREE.Color(['#fff6a8','#ffffff','#ff9ec4','#c9a8ff'][i%4]))}scene.add(fl);
+for(let i=0;i<22;i++){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.35+rnd()*.4,0),M(0x9aa0a6));r.position.set((rnd()-.5)*76,.2,(rnd()-.5)*76);r.scale.y=.7;r.castShadow=true;scene.add(r)}
+// محل خانهٔ رئیس (خط‌چین)
+const pts=[[-1.1,-1.1],[1.1,-1.1],[1.1,1.1],[-1.1,1.1],[-1.1,-1.1]].map(p=>new THREE.Vector3(p[0],.06,p[1]));
+const plan=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineDashedMaterial({color:0xffffff,dashSize:.25,gapSize:.15}));plan.computeLineDistances();scene.add(plan);
+// مدل‌ها
+function gable(g,w,h,d,c,y){const sh=new THREE.Shape();sh.moveTo(-w/2,0);sh.lineTo(w/2,0);sh.lineTo(0,h);const m=new THREE.Mesh(new THREE.ExtrudeGeometry(sh,{depth:d,bevelEnabled:false}),M(c,.6));m.position.set(0,y,-d/2);return add(g,m)}
 const build={
-hall(g){g.add(B(1.8,.5,1.8,0xb9b2a3),B(1.2,.9,1.2,0xd8b47a,0,.5),roof(1,.8,0xa8442c,1.4),C(.04,1,0x5b3b25,.5,1.6,.5,6));const f=B(.4,.25,.02,0xe8793a,.7,2.3,.5);g.add(f)},
-house(g){g.add(B(1.1,.7,1.1,0xefe1bf),B(.25,.4,.02,0x6b4a2b,0,0,.56),roof(.95,.7,0xb5533a,.7))},
-farm(g){g.add(B(1.8,.06,1.8,0x6b4a2b));for(let i=-2;i<=2;i++)g.add(B(1.6,.18,.16,i%2?0xc9b43c:0x5fa04a,0,.06,i*.32));g.add(B(.12,.6,.12,0x5b3b25,.75,.06,.75))},
-lumber(g){g.add(B(.9,.6,.8,0x9a6b3f,-.3,0,-.3),roof(.8,.5,0x5b3b25,.6));for(let i=0;i<3;i++){const l=C(.14,.9,0xb8864f,.5,.14+(i>1?.25:0),.3-i%2*.3+(i>1?.15:0),8);l.rotation.z=Math.PI/2;g.add(l)}},
-mine(g){const h=new THREE.Mesh(new THREE.ConeGeometry(1,1.3,6),M(0x7d7f86));h.position.y=.65;h.castShadow=true;g.add(h,B(.5,.45,.15,0x20222a,0,0,.7))},
-market(g){for(let i=-1;i<=1;i++){g.add(B(.5,.4,.5,0x8a5a33,i*.6,0,0),B(.58,.08,.6,i%2?0xe8793a:0x3f8fb0,i*.6,.8,0));g.add(C(.03,.4,0x5b3b25,i*.6-.25,.4,.25,5))}},
-road(g){g.add(B(2,.05,2,0xc9b48a))},
-tree(g){const s=.8+Math.random()*.6;g.add(C(.1*s,.5*s,0x6b4a2b,0,0,0,6));for(let i=0;i<2;i++){const c=new THREE.Mesh(new THREE.ConeGeometry((.7-i*.2)*s,(1+i*.1)*s,7),M(i?0x3f8a4a:0x4f9d55));c.position.y=(.7+i*.5)*s;c.castShadow=true;g.add(c)}}};
-const objs=new Map(),spots=[];
-function addB(b){const g=new THREE.Group();build[b.type]?.(g);g.position.set(b.x*CELL,0,b.z*CELL);g.rotation.y=b.type==='hall'?0:b.rot*Math.PI/180;g.scale.setScalar(.01);g.userData={b,t:0};scene.add(g);objs.set(b.id,g)}
-// شهروندان
-const cits=[],skin=[0xf1c9a0,0xd9a577,0xb67d54,0x8a5a3c],cloth=[0xe8793a,0x3f8fb0,0xc9b43c,0xa4508b,0x5fa04a];
-function mkCit(){const g=new THREE.Group(),r=a=>a[Math.random()*a.length|0];g.add(C(.14,.4,r(cloth),0,.05,0,6,.1));const h=new THREE.Mesh(new THREE.SphereGeometry(.12,8,6),M(r(skin)));h.position.y=.58;g.add(h);g.traverse(o=>o.castShadow=true);
-const p=pick();g.position.set(p.x,0,p.z);scene.add(g);return {g,tx:p.x,tz:p.z,wait:Math.random()*2,sp:.8+Math.random()*.8}}
-function pick(){const s=spots.length?spots[Math.random()*spots.length|0]:{x:0,z:0};return {x:s.x+(Math.random()-.5)*1.2,z:s.z+(Math.random()-.5)*1.2}}
-// همگام‌سازی
+house(g){bx(g,1.2,.8,1.0,0xf6f1e7);gable(g,1.5,.7,1.3,0xc9402f,.8);bx(g,.3,.5,.04,0x7b4a2a,0,0,.52);bx(g,.28,.26,.04,0x7ec8e8,-.4,.35,.52);bx(g,.28,.26,.04,0x7ec8e8,.4,.35,.52);bx(g,.16,.5,.16,0xb8aea0,.4,.9,-.2)},
+farm(g){bx(g,1.9,.06,1.9,0x8a5a36);for(let i=-2;i<=2;i++){const r=bx(g,1.6,.2,.2,i%2?0x7cc243:0x5fae3a,0,.06,i*.34);r.scale.y=1}bx(g,.1,.6,.1,0x6b4a2b,.8,.06,.8)},
+market(g){for(let i=-1;i<=1;i++){bx(g,.55,.45,.5,0x9a6b3f,i*.65);bx(g,.64,.08,.66,[0xe8793a,0xf2b632,0x3f8fb0][i+1],i*.65,.85);bx(g,.06,.4,.06,0x6b4a2b,i*.65-.26,.45,.26)}},
+road(g){bx(g,2,.05,2,0x555b68);bx(g,.12,.06,.8,0xf1f1f1,0,0,0)},
+tree(g){const s=.9+Math.random()*.7;const t=new THREE.Mesh(new THREE.CylinderGeometry(.09*s,.13*s,.7*s,6),M(0x7a5232));t.position.y=.35*s;add(g,t);
+[[0,1.05,0,.62,0x4fae4f],[.25,.85,.1,.42,0x62c05a],[-.22,.9,-.1,.4,0x3f9a48]].forEach(([a,b,c,r,col])=>{const m=new THREE.Mesh(new THREE.IcosahedronGeometry(r*s,1),M(col,.9));m.position.set(a*s,b*s,c*s);add(g,m)})}};
+const objs=new Map(),spots=[];let W=null;
+function addB(b){const g=new THREE.Group();build[b.type]?.(g);g.position.set(b.x*CELL,0,b.z*CELL);g.rotation.y=b.type==='road'||b.type==='tree'?(b.type==='road'?0:b.rot*Math.PI/180):b.rot*Math.PI/180;g.scale.setScalar(.01);g.userData={b,t:0};scene.add(g);objs.set(b.id,g)}
+// شهروندان (اولی = بنیان‌گذار)
+const cits=[],skin=[0xf1c9a0,0xd9a577,0xb67d54],cloth=[0xe8793a,0x3f8fb0,0xf2b632,0xa4508b,0x5fa04a];
+function mkCit(i){const g=new THREE.Group(),r=a=>a[Math.random()*a.length|0],f=i===0;const b=new THREE.Mesh(new THREE.CapsuleGeometry(.13,.3,4,8),M(f?0x2d3a55:r(cloth)));b.position.y=.3;add(g,b);
+const h=new THREE.Mesh(new THREE.SphereGeometry(.14,10,8),M(r(skin)));h.position.y=.68;add(g,h);if(f){const hr=new THREE.Mesh(new THREE.SphereGeometry(.15,10,6,0,6.3,0,1.3),M(0x3a2a1c));hr.position.y=.7;g.add(hr);g.scale.setScalar(1.35)}
+const p=pick();g.position.set(p.x,0,p.z);scene.add(g);return{g,tx:p.x,tz:p.z,wait:Math.random()*2,sp:.7+Math.random()*.7}}
+function pick(){const s=spots.length?spots[Math.random()*spots.length|0]:{x:0,z:0};return{x:s.x+(Math.random()-.5)*(spots.length?1.2:5),z:s.z+(Math.random()-.5)*(spots.length?1.2:5)}}
+// HUD و همگام‌سازی
 let rev=-1;
-function sync(w){rev=w.rev;document.getElementById('cn').textContent=w.country.name;
-const ids=new Set(w.buildings.map(b=>b.id));
-for(const [id,g] of objs)if(!ids.has(id)){scene.remove(g);objs.delete(id)}
-for(const b of w.buildings){const g=objs.get(b.id);if(!g)addB(b);else{const o=g.userData.b;if(o.x!==b.x||o.z!==b.z){g.position.set(b.x*CELL,0,b.z*CELL);g.userData.b=b}}}
-spots.length=0;w.buildings.filter(b=>b.type==='road'||b.type==='hall').forEach(b=>spots.push({x:b.x*CELL,z:b.z*CELL}));
-const s=w.stats,cap=w.capacity,fd=s.food<=0;
-document.getElementById('stats').innerHTML=[['👥 جمعیت',fa(s.pop)+' / '+fa(cap),s.pop>=cap?'warn':'ok'],['💰 پول',fa(s.money)],['🌾 غذا',fa(s.food),fd?'warn':''],['🪵 چوب',fa(s.wood)],['🪨 سنگ',fa(s.stone)],['▶️ مشترکان',fa(s.subs)]].map(([a,b,c])=>`<div class="st glass ${c||''}">${a} <b>${b}</b></div>`).join('');
-document.getElementById('evl').innerHTML=w.events.slice(0,8).map(e=>`<div><time>${new Date(e.t).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})}</time>${e.text.replace(/</g,'&lt;')}</div>`).join('');
-const n=Math.min(s.pop,60);while(cits.length<n)cits.push(mkCit());while(cits.length>n){scene.remove(cits.pop().g)}}
-async function poll(){const dot=document.getElementById('dot');try{const r=await fetch('/api/world?since='+rev,{cache:'no-store'});const w=await r.json();if(!w.same)sync(w);dot.className=''}catch(e){dot.className='off'}}
-await poll();setInterval(poll,4000);
-addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-const clock=new THREE.Clock();
-renderer.setAnimationLoop(()=>{const dt=Math.min(clock.getDelta(),.1),t=clock.elapsedTime;
-for(const g of objs.values()){const u=g.userData;if(u.t<1){u.t=Math.min(1,u.t+dt*2);const e=1-Math.pow(1-u.t,3);g.scale.setScalar(Math.max(.01,e*(1+.15*Math.sin(u.t*Math.PI))))}}
-for(const c of cits){if(c.wait>0){c.wait-=dt;c.g.position.y=0;continue}const dx=c.tx-c.g.position.x,dz=c.tz-c.g.position.z,d=Math.hypot(dx,dz);
-if(d<.1){c.wait=1+Math.random()*3;const p=pick();c.tx=p.x;c.tz=p.z}else{c.g.position.x+=dx/d*c.sp*dt;c.g.position.z+=dz/d*c.sp*dt;c.g.rotation.y=Math.atan2(dx,dz);c.g.position.y=Math.abs(Math.sin(t*9+c.sp*7))*.06}}
-ctl.target.x=Math.max(-36,Math.min(36,ctl.target.x));ctl.target.z=Math.max(-36,Math.min(36,ctl.target.z));ctl.update();renderer.render(scene,cam)});
+function sync(w){W=w;rev=w.rev;const ids=new Set(w.buildings.map(b=>b.id));
+for(const[id,g]of objs)if(!ids.has(id)){scene.remove(g);objs.delete(id)}
+for(const b of w.buildings){const g=objs.get(b.id);if(!g)addB(b);else if(g.userData.b.x!==b.x||g.userData.b.z!==b.z){g.position.set(b.x*CELL,0,b.z*CELL);g.userData.b=b}}
+const hs=w.buildings.filter(b=>b.type==='house');plan.visible=!hs.length;
+spots.length=0;w.buildings.filter(b=>['road','house','market'].includes(b.type)).forEach(b=>spots.push({x:b.x*CELL,z:b.z*CELL}));
+const s=w.stats;$('crumb').innerHTML=[...w.tiers].reverse().map(t=>`<span class="${t===w.tier?'on':''}">${t}</span>`).join('←');
+$('stats').innerHTML=[['👥','جمعیت',fa(s.pop),'نفر'],['🪙','خزانه',fa(s.money/1e6,1),'میلیون تومان'],['🍞','غذا',fa(s.food),'کیلوگرم']].map(([i,a,b,u])=>`<div class="st c"><small>${i} ${a}</small><b>${b}</b><small>${u}</small></div>`).join('');
+const g=w.goals.find(g=>s.subs<g.at)||w.goals[w.goals.length-1],pend=w.goals.find(g=>s.subs>=g.at&&!g.value);
+$('goal').innerHTML=pend?`🗳️ ${fa(pend.at)} نفر: ${pend.title}<br><small>نتیجه رأی‌گیری به‌زودی اعلام می‌شود</small>`:`هدف بعدی: ${fa(g.at)} نفر = ${g.title}<i><u style="width:${Math.min(100,s.subs/g.at*100)}%"></u></i><small>${fa(s.subs)} از ${fa(g.at)} نفر</small>`;
+$('ev').innerHTML=w.events.map(e=>`<div><time>${new Date(e.t).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})}</time>${e.text.replace(/</g,'&lt;')}</div>`).join('');
+const n=Math.min(s.pop,80);while(cits.length<n)cits.push(mkCit(cits.length));while(cits.length>n)scene.remove(cits.pop().g)}
+async function poll(){try{const w=await(await fetch('/api/world?since='+rev,{cache:'no-store'})).json();if(!w.same)sync(w);$('dot').className=''}catch(e){$('dot').className='off'}}
+// داستان آغازین (از ویدیو)
+const story=['می‌شه از این زمین خالی... یه کشور ساخت؟','منم بنیان‌گذار و رئیس موقتم.','غذا؟ صفر.','اول، دو میلیون برای خونهٔ رئیس...','هر کدومتون فالو کنین، هر فالو = ۱ نفر + ۱ میلیون تومن به خزانهٔ این دنیای مجازی اضافه می‌شه!','مصرف هر نفر: روزی نیم کیلو غذا. کم بیاریم، باید از خزانه بخریم!','صد نفر که شدیم، اسم اینجا رو با رأی شما انتخاب می‌کنیم.','دو هزار نفر که شدیم، نظام حکومت: پادشاهی یا جمهوری. خودتون هم می‌تونین نامزد بشین!'];
+let tm=0,si=0;function say(i){clearTimeout(tm);si=i;if(i>=story.length){$('cap').style.display='none';localStorage.seen=1;return}$('cap').style.display='';$('cap').textContent=story[i];tm=setTimeout(()=>say(i+1),Math.max(3200,story[i].length*75))}
+$('cap').onclick=()=>say(si+1);$('bs').onclick=()=>say(0);$('be').onclick=()=>{const e=$('ev');e.style.display=e.style.display==='block'?'none':'block'};
+await poll();setInterval(poll,4000);localStorage.seen?$('cap').style.display='none':say(0);
+addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight)});
+const ck=new THREE.Clock();
+R.setAnimationLoop(()=>{const dt=Math.min(ck.getDelta(),.1),t=ck.elapsedTime;
+for(const g of objs.values()){const u=g.userData;if(u.t<1){u.t=Math.min(1,u.t+dt*1.8);const e=1-Math.pow(1-u.t,3);g.scale.setScalar(Math.max(.01,e*(1+.12*Math.sin(u.t*Math.PI))))}}
+for(const c of cits){if(c.wait>0){c.wait-=dt;continue}const dx=c.tx-c.g.position.x,dz=c.tz-c.g.position.z,d=Math.hypot(dx,dz);
+if(d<.1){c.wait=1+Math.random()*3;const p=pick();c.tx=p.x;c.tz=p.z;c.g.position.y=0}else{c.g.position.x+=dx/d*c.sp*dt;c.g.position.z+=dz/d*c.sp*dt;c.g.rotation.y=Math.atan2(dx,dz);c.g.position.y=Math.abs(Math.sin(t*9+c.sp*7))*.05}}
+ctl.target.x=Math.max(-34,Math.min(34,ctl.target.x));ctl.target.z=Math.max(-34,Math.min(34,ctl.target.z));ctl.update();R.render(scene,cam)});
 </script>
 </body></html>

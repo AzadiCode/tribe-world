@@ -14,7 +14,9 @@ from flask import Flask, request, jsonify, send_from_directory
 MONGO_URI  = os.environ.get("MONGO_URI", "").strip()      # خالی = حافظه‌ی موقت
 ADMIN_KEY  = os.environ.get("ADMIN_KEY", "").strip()      # رمز پنل مدیریت
 SECRET_KEY = os.environ.get("SECRET_KEY") or ADMIN_KEY or "dev-only"
-TICK, SIZE, CAP_BASE = 10, 20, 10                          # ثانیه / نیم‌اندازه‌ی نقشه / ظرفیت پایه
+SIZE = 20                                                  # نیم‌اندازه‌ی نقشه (خانه)
+DAY = int(os.environ.get("DAY_SECONDS", "600"))            # طول یک «روز بازی» به ثانیه‌ی واقعی
+FOOD_PRICE, FOOD_PER_PERSON, FARM_YIELD, MARKET_INCOME = 20000, 0.5, 10, 200000
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 logging.basicConfig(level=logging.INFO)
@@ -29,32 +31,27 @@ else:
     log.warning("MONGO_URI تنظیم نشده؛ داده‌ها با هر ری‌استارت پاک می‌شوند")
 _mem = {}
 
-CATALOG = {"hall": "تالار قبیله", "house": "خانه", "farm": "مزرعه", "lumber": "چوب‌بری",
-           "mine": "معدن", "market": "بازار", "road": "جاده", "tree": "درخت"}
-# قوانین داستان: اثر هر مشترک / مشارکت
-RULES = {"subscriber": {"pop": 1, "food": 10, "money": 5, "subs": 1},
-         "contribution": {"pop": 2, "food": 20, "money": 25, "wood": 10}}
-RES = ("pop", "money", "food", "wood", "stone", "subs")
+CATALOG = {"house": "خانه", "farm": "مزرعه", "market": "بازار", "road": "جاده", "tree": "درخت"}
+COST = {"house": 2_000_000, "farm": 1_500_000, "market": 3_000_000, "road": 100_000, "tree": 0}  # تومان
+# قوانین داستان (مطابق ویدیو): هر فالو = ۱ نفر + ۱ میلیون تومان به خزانه
+RULES = {"subscriber": {"pop": 1, "money": 1_000_000, "subs": 1}, "contribution": {"pop": 1, "money": 1_000_000}}
+TIERS = [(0, "قبیله"), (500, "روستا"), (5000, "شهر"), (50000, "کشور")]   # آستانه‌ها پیشنهادی‌اند؛ تغییرشان بده
+GOALS = [(100, "name", "انتخاب اسم قبیله با رأی مخاطبان"), (2000, "gov", "انتخاب نظام حکومت: پادشاهی یا جمهوری")]
+RES = ("pop", "money", "food", "subs")
 
 
 def now_iso(): return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def seed():
-    rnd, b, used = random.Random(7), [], set()
-    def add(t, x, z):
-        used.add((x, z)); b.append({"id": len(b) + 1, "type": t, "x": x, "z": z, "rot": rnd.choice([0, 90, 180, 270])})
-    add("hall", 0, 0)
-    for x in range(-8, 9): add("road", x, 1)
-    for x in (-4, -2, 2, 4): add("house", x, 0)
-    for x in (-4, -2, 2): add("farm", x, 2)
-    add("market", 0, 2); add("lumber", 6, 2); add("mine", 7, 0)
-    while sum(1 for i in b if i["type"] == "tree") < 45:
+    rnd, b = random.Random(7), []
+    while len(b) < 110:
         x, z = rnd.randint(-SIZE, SIZE - 1), rnd.randint(-SIZE, SIZE - 1)
-        if (x, z) not in used and not (-9 < x < 10 and -2 < z < 4): add("tree", x, z)
-    return {"_id": "main", "rev": 1, "last": time.time(), "country": {"name": "قبیله"},
-            "stats": {"pop": 8, "money": 100.0, "food": 60.0, "wood": 50.0, "stone": 20.0, "subs": 0},
-            "buildings": b, "events": [{"t": now_iso(), "text": "🏕️ قبیله بنا شد."}], "next_id": len(b) + 1}
+        if (-10 < x < 11 and -7 < z < 7) or (-13 < x < -4 and -13 < z < -5) or any(i["x"] == x and i["z"] == z for i in b): continue
+        b.append({"id": len(b) + 1, "type": "tree", "x": x, "z": z, "rot": rnd.choice([0, 90, 180, 270])})
+    return {"_id": "main", "rev": 1, "last": time.time(), "country": {"name": "قبیله", "gov": ""},
+            "stats": {"pop": 1, "money": 10_000_000, "food": 0.0, "subs": 0}, "story": {"reached": [], "values": {}},
+            "buildings": b, "events": [{"t": now_iso(), "text": "🏕️ یک زمین خالی، یک بنیان‌گذار و ۱۰ میلیون تومان. قبیله از اینجا شروع می‌شود."}], "next_id": len(b) + 1}
 
 
 def load():
@@ -74,24 +71,29 @@ def counts(d):
     return c
 
 
-def capacity(d):
-    c = counts(d); return CAP_BASE + c.get("house", 0) * 5 + c.get("hall", 0) * 10
+def capacity(d): return counts(d).get("house", 0) * 4
 
 
 def tick(d):
-    t = time.time(); n = min(int((t - d["last"]) // TICK), 8640)
+    n = min(int((time.time() - d["last"]) // DAY), 60)
     if n <= 0: return False
-    d["last"] = t if n == 8640 else d["last"] + n * TICK
+    d["last"] = time.time() if n == 60 else d["last"] + n * DAY
     c, s = counts(d), d["stats"]
-    s["food"] = max(0, s["food"] + n * (c.get("farm", 0) * 3 - s["pop"] * 0.2))
-    s["money"] += n * (c.get("market", 0) * 5 + s["pop"] * 0.1)
-    s["wood"] += n * c.get("lumber", 0) * 2
-    s["stone"] += n * c.get("mine", 0) * 1.5
-    cap = capacity(d)
-    if s["food"] > 0 and s["pop"] < cap: s["pop"] += min(n, cap - s["pop"])
-    for k in ("money", "food", "wood", "stone"): s[k] = round(s[k], 1)
+    for _ in range(n):
+        s["food"] += c.get("farm", 0) * FARM_YIELD; s["money"] += c.get("market", 0) * MARKET_INCOME
+        need = s["pop"] * FOOD_PER_PERSON
+        if s["food"] >= need: s["food"] -= need
+        else:                                              # کمبود غذا: خرید از خزانه
+            buy = need - s["food"]; s["food"] = 0; s["money"] = max(0, s["money"] - buy * FOOD_PRICE)
+    s["food"], s["money"] = round(s["food"], 1), int(s["money"])
     d["rev"] += 1
     return True
+
+
+def check_goals(d):
+    for at, key, title in GOALS:
+        if d["stats"]["subs"] >= at and key not in d["story"]["reached"]:
+            d["story"]["reached"].append(key); log_event(d, f"🗳️ به {at} نفر رسیدیم! {title} — منتظر رأی شما باشید.")
 
 
 def log_event(d, text):
@@ -101,12 +103,15 @@ def log_event(d, text):
 def apply_delta(d, delta):
     for k in RES:
         v = float(delta.get(k, 0) or 0)
-        if v: d["stats"][k] = max(0, int(d["stats"][k] + v) if k in ("pop", "subs") else round(d["stats"][k] + v, 1))
+        if v: d["stats"][k] = max(0, int(d["stats"][k] + v) if k != "food" else round(d["stats"][k] + v, 1))
+    check_goals(d)
 
 
 def view(d):
     return {"rev": d["rev"], "country": d["country"], "stats": d["stats"], "capacity": capacity(d),
-            "buildings": d["buildings"], "events": d["events"][:20], "catalog": CATALOG}
+            "buildings": d["buildings"], "events": d["events"][:20], "catalog": CATALOG, "cost": COST, "day": DAY,
+            "tier": [n for at, n in TIERS if d["stats"]["subs"] >= at][-1], "tiers": [n for _, n in TIERS],
+            "goals": [{"at": a, "key": k, "title": t, "value": d["story"]["values"].get(k)} for a, k, t in GOALS]}
 
 
 def mutate(fn):
@@ -187,11 +192,14 @@ def add_building():
     j = request.get_json(silent=True) or {}; t = j.get("type")
     if t not in CATALOG: raise ValueError("نوع ساختمان نامعتبر")
     def f(d):
-        if t == "hall" and counts(d).get("hall"): raise ValueError("فقط یک تالار می‌تواند وجود داشته باشد")
+        cost = 0 if j.get("free") else COST[t]
+        if d["stats"]["money"] < cost: raise ValueError("پول خزانه کافی نیست")
         x, z = (int(j["x"]), int(j["z"])) if j.get("x") not in (None, "") and j.get("z") not in (None, "") else free_cell(d, t)
         check_cell(d, x, z)
         b = {"id": d["next_id"], "type": t, "x": x, "z": z, "rot": random.choice([0, 90, 180, 270])}
-        d["next_id"] += 1; d["buildings"].append(b); log_event(d, f"🏗️ {CATALOG[t]} ساخته شد."); return b
+        d["next_id"] += 1; d["buildings"].append(b); d["stats"]["money"] -= cost
+        if t != "tree": log_event(d, f"🏗️ {CATALOG[t]} ساخته شد" + (f" (−{cost/1e6:g} میلیون تومان)." if cost else "."))
+        return b
     return jsonify(building=mutate(f))
 
 
@@ -238,6 +246,18 @@ def contribution():
         apply_delta(d, {k: v * n for k, v in RULES[kind].items()})
         who = "مشترک جدید" if kind == "subscriber" else "مشارکت"
         log_event(d, f"🎉 {n} {who}" + (f" — {str(j['note'])[:120]}" if j.get("note") else "") + " به قبیله پیوست.")
+    mutate(f); return jsonify(ok=True)
+
+
+@app.post("/api/admin/milestone")
+@admin_only
+def milestone():
+    j = request.get_json(silent=True) or {}; key, val = j.get("key"), str(j.get("value", "")).strip()[:40]
+    if key not in [g[1] for g in GOALS] or not val: raise ValueError("کلید یا مقدار نامعتبر")
+    def f(d):
+        d["story"]["values"][key] = val
+        if key == "name": d["country"]["name"] = val; log_event(d, f"🗳️ با رأی شما نام قبیله شد «{val}».")
+        else: d["country"]["gov"] = val; log_event(d, f"🗳️ نظام حکومت: {val}.")
     mutate(f); return jsonify(ok=True)
 
 
