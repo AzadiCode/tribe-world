@@ -25,11 +25,11 @@ canvas{display:block;touch-action:none}svg{width:100%;height:100%;display:block}
 #side{position:fixed;inset-inline-start:6px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:4px;pointer-events:auto}
 .btn{position:relative;width:26px;height:26px;border-radius:var(--r);padding:6px;color:var(--cream);cursor:pointer;border:1px solid var(--line)}.btn:after{content:'';position:absolute;inset:-3px}.btn:active{transform:scale(.94)}.btn.dim{opacity:.5}
 #bot{margin-top:auto;width:100%;max-width:300px;display:flex;flex-direction:column;gap:4px}
-#quest{border-radius:var(--r);padding:5px 8px;display:flex;align-items:center;gap:7px}
-#quest .fl{width:20px;height:20px;flex:none;border-radius:5px;padding:4px;background:linear-gradient(145deg,#ffd36b,#ff8a4c);color:#5a2a05}
+#quest{border-radius:var(--r);padding:4px 7px;display:flex;align-items:center;gap:6px}
+#quest .fl{width:17px;height:17px;flex:none;border-radius:5px;padding:3.5px;background:linear-gradient(145deg,#ffd36b,#ff8a4c);color:#5a2a05}
 #quest .tx{flex:1;min-width:0}#quest strong{display:block;font-size:10.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#bar{height:3px;border-radius:2px;background:#ffffff1f;margin:3px 0 2px;overflow:hidden}#bar u{display:block;height:100%;width:0;border-radius:2px;background:linear-gradient(90deg,var(--jade),var(--gold));transition:width .8s cubic-bezier(.2,.8,.2,1)}
-#quest small{font-size:9px;opacity:.7}
+.qh{display:flex;align-items:baseline;gap:8px}.qh strong{flex:1}.qh small{flex:none;white-space:nowrap}#bar{height:2.5px;border-radius:2px;background:#ffffff1f;margin:3px 0 1px;overflow:hidden}#bar u{display:block;height:100%;width:0;border-radius:2px;background:linear-gradient(90deg,var(--jade),var(--gold));transition:width .8s cubic-bezier(.2,.8,.2,1)}
+#quest small{font-size:8.5px;opacity:.7}
 #cap{pointer-events:auto;border-radius:var(--r);padding:9px 10px 13px;font-size:11.5px;line-height:1.8;min-height:52px;position:relative;cursor:pointer}
 #cap .who{position:absolute;top:-8px;inset-inline-start:10px;background:linear-gradient(145deg,#ffd36b,#ffb02e);color:#4a2a05;font-size:9px;font-weight:800;padding:1px 7px;border-radius:4px}
 #cap em{position:absolute;bottom:3px;inset-inline-end:8px;font-size:8.5px;opacity:.5;font-style:normal}
@@ -137,7 +137,7 @@ const MODES={move:'✋ جابه‌جایی: ساختمان را بکش و رها
 // ── رابط
 document.body.insertAdjacentHTML('afterbegin','<div id="nts"></div>');
 document.body.insertAdjacentHTML('beforeend',`<div id="adm"><div class="btn e g" data-m="move" title="جابه‌جایی">✋</div><div class="btn e g" data-m="build" title="ساخت">🏗️</div><div class="btn e g" data-m="rot" title="چرخش">🔄</div><div class="btn e g" data-m="del" title="حذف">🗑️</div><div class="btn e g" data-m="name" title="نام مستعار">🏷️</div><div class="btn e g" data-m="say" title="پیام">💬</div><div class="btn e g" id="btm" title="زمان">⏱️</div></div><div id="pal" class="g"><span data-t="house" class="on">🏠</span><span data-t="farm">🌾</span><span data-t="market">🏪</span><span data-t="road">🛣️</span><span data-t="tree">🌲</span><label><input type="checkbox" id="fr" checked> رایگان</label></div><div id="md" class="g"><p id="mt"></p><input id="mi" maxlength="120"><div><button id="mok">تأیید</button><button id="mno">انصراف</button></div></div>`);
-$('side').insertAdjacentHTML('beforeend','<div id="bn" class="btn g" title="نمایش/پنهان نام‌ها"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.9 3.1-6.2 7-6.2s7 2.3 7 6.2"/></svg></div><div id="ba" class="btn g" title="ابزار مدیر"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg></div>');
+$('side').insertAdjacentHTML('beforeend','<div id="bn" class="btn g" title="نمایش/پنهان نام‌ها"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.9 3.1-6.2 7-6.2s7 2.3 7 6.2"/></svg></div><div id="bm" class="btn g" title="قطع صدا"></div><div id="ba" class="btn g" title="ابزار مدیر"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg></div>');
 $('tier').insertAdjacentHTML('beforeend','<span id="clk"></span>');
 // ── جاده‌های متصل + چراغ خیابان
 const LAMP=new THREE.MeshStandardMaterial({color:0xfff1c0,emissive:0xffd98a,emissiveIntensity:.1}),LP=new THREE.MeshBasicMaterial({color:0xffd98a,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}),LPG=new THREE.CircleGeometry(1.3,20),ASP=0x4a4d52;
@@ -288,11 +288,45 @@ rebuildNav(w);roads(w);
 const s=w.stats;tgt.pop=s.pop;tgt.money=s.money/1e6;tgt.food=s.food;
 const ti=w.tiers.indexOf(w.tier);$('tn').textContent=w.tier;$('path').innerHTML=w.tiers.map((t,i)=>`<i class="${i<ti?'past':i===ti?'on':''}"></i>`).join('<u></u>');
 const g=w.goals.find(g=>s.subs<g.at),pend=w.goals.find(g=>s.subs>=g.at&&!g.value);
-$('quest').innerHTML=`<div class="fl">${IC.flag}</div><div class="tx">${pend?`<strong>${pend.title}</strong><small>رأی‌گیری در جریان است</small>`:g?`<strong>${fa(g.at)} نفر ← ${g.title}</strong><div id="bar"><u style="width:${Math.min(100,s.subs/g.at*100)}%"></u></div><small>${fa(s.subs)} از ${fa(g.at)}</small>`:'<strong>همه هدف‌ها انجام شد</strong>'}</div>`;
+$('quest').innerHTML=`<div class="fl">${IC.flag}</div><div class="tx">${pend?`<strong>${pend.title}</strong><small>رأی‌گیری در جریان است</small>`:g?`<div class="qh"><strong>${fa(g.at)} نفر ← ${g.title}</strong><small>${fa(s.subs)} از ${fa(g.at)}</small></div><div id="bar"><u style="width:${Math.min(100,s.subs/g.at*100)}%"></u></div>`:'<strong>همه هدف‌ها انجام شد</strong>'}</div>`;
 $('ev').innerHTML=w.events.map(e=>`<div><time>${new Date(e.t).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})}</time>${noEm(e.text).replace(/</g,'&lt;')}</div>`).join('');
 if(seenEv&&w.events[0]&&w.events[0].t+w.events[0].text!==seenEv)toast(noEm(w.events[0].text));seenEv=w.events[0]?w.events[0].t+w.events[0].text:'';
 const n=Math.min(s.pop,80);while(cits.length<n)cits.push(mkCit(cits.length));while(cits.length>n){const c=cits.pop();scene.remove(c.g);c.el.remove()}names();chatSync(w)}
 async function poll(){try{const w=await(await fetch('/api/world?since='+rev,{cache:'no-store'})).json();if(!w.same)sync(w);$('dot').className=''}catch(e){$('dot').className='off'}}
+
+// ── موسیقی زمینه: کاملاً ساخته‌شده با وب‌اودیو (بدون فایل صوتی، بدون کپی‌رایت). مقام شور روی ر، ۸۴ ضرب، آرام و کم‌صدا
+/*MUS-START*/
+const MU=(()=>{const E=60/84/2,SC=[0,1,3,5,7,8,10,12],F=q=>293.66*Math.pow(2,q/12),
+MEL='0 - 2 3 4 - - -  3 - 2 1 2 - 0 -  4 - 5 4 3 - 2 3  2 - 1 - 0 - - -  4 - 6 7 6 - 5 4  5 - 4 3 4 - 2 -  3 - 2 1 2 3 4 -  3 - 1 - 0 - - -'.split(/\s+/),
+BS=[0,0,-4,-2,0,3,-4,0],CH=[[0,3,7],[-4,0,3],[0,3,7],[-4,0,3]],NZ=new WeakMap();
+const env=(c,t,a,d,pk)=>{const g=c.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(pk,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+d);return g};
+function pluck(c,o,t,f,L,v){const d=Math.max(.7,L*1.4),g=env(c,t,.012,d,v),lp=c.createBiquadFilter(),a=c.createOscillator(),b=c.createOscillator(),gb=c.createGain();lp.type='lowpass';lp.frequency.value=2400;lp.Q.value=.3;a.type='triangle';b.type='sine';a.frequency.value=f;b.frequency.value=f*2;a.detune.value=(Math.random()-.5)*8;gb.gain.value=.25;
+a.connect(g);b.connect(gb);gb.connect(g);g.connect(lp);lp.connect(o);const e=t+.07+d;a.start(t);b.start(t);a.stop(e);b.stop(e)}
+function bass(c,o,t,f,v){const g=env(c,t,.015,1.1,v),a=c.createOscillator();a.type='sine';a.frequency.value=f;a.connect(g);g.connect(o);a.start(t);a.stop(t+1.2)}
+function pad(c,o,t,f,dur,v){const g=c.createGain(),lp=c.createBiquadFilter(),a=c.createOscillator();lp.type='lowpass';lp.frequency.value=800;a.type='triangle';a.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+1.5);g.gain.setValueAtTime(v,t+dur);g.gain.linearRampToValueAtTime(0,t+dur+1.6);a.connect(g);g.connect(lp);lp.connect(o);a.start(t);a.stop(t+dur+1.7)}
+function thump(c,o,t,v){const g=env(c,t,.004,.32,v),a=c.createOscillator();a.type='sine';a.frequency.setValueAtTime(150,t);a.frequency.exponentialRampToValueAtTime(52,t+.16);a.connect(g);g.connect(o);a.start(t);a.stop(t+.4)}
+function tap(c,o,t,v){let b=NZ.get(c);if(!b){b=c.createBuffer(1,c.sampleRate*.2|0,c.sampleRate);const d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;NZ.set(c,b)}
+const n=c.createBufferSource(),f=c.createBiquadFilter(),g=env(c,t,.002,.07,v);n.buffer=b;f.type='bandpass';f.frequency.value=1900;f.Q.value=1.1;n.connect(f);f.connect(g);g.connect(o);n.start(t);n.stop(t+.12)}
+function step(c,o,t,n){const k=n%64,tok=MEL[k],bar=k>>3,j=k&7;
+if(tok!=='-'){let L=1;while(MEL[(k+L)%64]==='-'&&L<8)L++;pluck(c,o,t,F(SC[+tok]),L*E,.34)}
+if(j===0)bass(c,o,t,F(BS[bar]-24),.5);if(j===4)bass(c,o,t,F(BS[bar]-24),.26);
+if(k%16===0)CH[k>>4].forEach(q=>pad(c,o,t,F(q-12),16*E,.05));
+if(j===0)thump(c,o,t,.55);else if(j===4)thump(c,o,t,.3);else if(j===3||j===6)tap(c,o,t,.16);else if(j===7)tap(c,o,t,.09)}
+function chain(c,dest){const m=c.createGain(),bus=c.createGain(),cp=c.createDynamicsCompressor(),cv=c.createConvolver(),wet=c.createGain(),len=c.sampleRate*1.8|0,ir=c.createBuffer(2,len,c.sampleRate);
+for(let h=0;h<2;h++){const d=ir.getChannelData(h);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6)}
+cv.buffer=ir;wet.gain.value=.3;bus.connect(m);bus.connect(cv);cv.connect(wet);wet.connect(m);cp.threshold.value=-14;cp.ratio.value=4;m.connect(cp);cp.connect(dest);return{bus,m}}
+return{E,V:.24,N:MEL.length,step,chain}})();
+/*MUS-END*/
+(()=>{let ac=null,o=null,nt=0,sn=0,muted=localStorage.mute==='1';const bm=$('bm'),S='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">',
+I1=S+'<path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.5 7.5 0 0 1 0 10.4"/></svg>',I0=S+'<path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>',
+paint=()=>{bm.innerHTML=muted?I0:I1;bm.title=muted?'پخش موسیقی':'قطع صدا'};
+function boot(){if(ac)return true;const A=window.AudioContext||window.webkitAudioContext;if(!A)return false;ac=new A();o=MU.chain(ac,ac.destination);o.m.gain.value=0;nt=ac.currentTime+.15;
+setInterval(()=>{if(ac.state!=='running')return;while(nt<ac.currentTime+.6){MU.step(ac,o.bus,nt,sn++);nt+=MU.E}},150);return true}
+function on(){if(muted||!boot())return;ac.resume().then(()=>{o.m.gain.cancelScheduledValues(ac.currentTime);o.m.gain.setTargetAtTime(MU.V,ac.currentTime,.9)}).catch(()=>0)}
+function off(){if(!ac)return;o.m.gain.cancelScheduledValues(ac.currentTime);o.m.gain.setTargetAtTime(0,ac.currentTime,.12);setTimeout(()=>{if(muted)ac.suspend()},700)}
+const EV=['pointerup','touchend','keydown'],un=()=>{if(muted)return;on();if(ac&&ac.state==='running')EV.forEach(e=>removeEventListener(e,un,true))};EV.forEach(e=>addEventListener(e,un,true));
+bm.onclick=()=>{muted=!muted;localStorage.mute=muted?'1':'';paint();muted?off():on();toast(muted?'صدا قطع شد':'موسیقی روشن شد')};
+document.addEventListener('visibilitychange',()=>{if(!ac)return;if(document.hidden)ac.suspend();else if(!muted)ac.resume()});paint()})();
 // داستان آغازین (از ویدیو)
 const story=['می‌شه از این زمین خالی... یه کشور ساخت؟','منم بنیان‌گذار و رئیس موقتم.','غذا؟ صفر.','اول، دو میلیون برای خونهٔ رئیس...','هر کدومتون فالو کنین، هر فالو = ۱ نفر + ۱ میلیون تومن به خزانهٔ این دنیای مجازی اضافه می‌شه!','مصرف هر نفر: روزی نیم کیلو غذا. کم بیاریم، باید از خزانه بخریم!','صد نفر که شدیم، اسم اینجا رو با رأی شما انتخاب می‌کنیم.','دو هزار نفر که شدیم، نظام حکومت: پادشاهی یا جمهوری. خودتون هم می‌تونین نامزد بشین!'];
 let tm=0,si=0;function say(i){clearTimeout(tm);si=i;if(i>=story.length){$('cap').style.display='none';$('bot').style.paddingBottom='0';localStorage.seen=1;return}$('cap').style.display='';typ(story[i]);tm=setTimeout(()=>say(i+1),Math.max(3600,story[i].length*85))}
