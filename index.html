@@ -17,6 +17,7 @@ canvas{display:block;touch-action:none}svg{width:100%;height:100%;display:block}
 .chip .tx{min-width:0;display:flex;flex-direction:column}.chip b{font-size:11px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap}.chip small{font-size:8px;opacity:.65;line-height:1.1;white-space:nowrap}
 .chip .d{position:absolute;top:-3px;inset-inline-end:6px;font-size:9px;font-weight:800;color:var(--jade);animation:fl 1.6s ease-out forwards}
 @keyframes fl{to{transform:translateY(-12px);opacity:0}}
+#rect{position:fixed;left:50%;transform:translateX(-50%);top:calc(max(6px,env(safe-area-inset-top)) + 62px);z-index:5;display:none;padding:3px 10px;border-radius:var(--r);font-size:10.5px;font-weight:800;color:#ff7a6b;font-variant-numeric:tabular-nums;pointer-events:none}#rect.on{display:block}#brec.rec{outline:1.5px solid #ff4d3d;background:rgba(255,77,61,.28);animation:rp 1.2s infinite}@keyframes rp{50%{opacity:.55}}
 #tier{margin-top:5px;display:flex;align-items:center;gap:7px;padding:3px 9px;border-radius:var(--r)}
 #tier h1{margin:0;font-size:10.5px;font-weight:800;color:var(--gold)}
 #path{display:flex;align-items:center;direction:ltr}#path i{width:5px;height:5px;border-radius:50%;background:#fff3d633}#path i.on{background:var(--gold);box-shadow:0 0 0 2px #ffc24744}#path i.past{background:var(--jade)}#path u{width:8px;height:1.5px;background:#fff3d633}
@@ -149,7 +150,7 @@ const DEF=['آرش','سارا','نیما','مینا','کیان','لیلا','پا
 const MODES={move:'✋ جابه‌جایی: ساختمان را بکش و رها کن',build:'🏗️ ساخت: روی زمین بزن (جاده: بکش)',rot:'🔄 چرخش: روی ساختمان بزن',del:'🗑️ حذف: روی ساختمان بزن',name:'🏷️ نام مستعار: روی آدم بزن',say:'💬 پیام: روی آدم بزن'};
 // ── رابط
 document.body.insertAdjacentHTML('afterbegin','<div id="nts"></div>');
-document.body.insertAdjacentHTML('beforeend',`<div id="adm"><div class="btn e g" data-m="move" title="جابه‌جایی">✋</div><div class="btn e g" data-m="build" title="ساخت">🏗️</div><div class="btn e g" data-m="rot" title="چرخش">🔄</div><div class="btn e g" data-m="del" title="حذف">🗑️</div><div class="btn e g" data-m="name" title="نام مستعار">🏷️</div><div class="btn e g" data-m="say" title="پیام">💬</div><div class="btn e g" id="btm" title="زمان">⏱️</div></div><div id="pal" class="g"><span data-t="house" class="on">🏠</span><span data-t="hq">🏢</span><span data-t="farm">🌾</span><span data-t="market">🏪</span><span data-t="road">🛣️</span><span data-t="tree">🌲</span><label><input type="checkbox" id="fr" checked> رایگان</label></div><div id="md" class="g"><p id="mt"></p><input id="mi" maxlength="120"><div><button id="mok">تأیید</button><button id="mno">انصراف</button></div></div>`);
+document.body.insertAdjacentHTML('beforeend',`<div id="adm"><div class="btn e g" data-m="move" title="جابه‌جایی">✋</div><div class="btn e g" data-m="build" title="ساخت">🏗️</div><div class="btn e g" data-m="rot" title="چرخش">🔄</div><div class="btn e g" data-m="del" title="حذف">🗑️</div><div class="btn e g" data-m="name" title="نام مستعار">🏷️</div><div class="btn e g" data-m="say" title="پیام">💬</div><div class="btn e g" id="brec" title="ضبط ویدیو">🎥</div><div class="btn e g" id="btm" title="زمان">⏱️</div></div><div id="pal" class="g"><span data-t="house" class="on">🏠</span><span data-t="hq">🏢</span><span data-t="farm">🌾</span><span data-t="market">🏪</span><span data-t="road">🛣️</span><span data-t="tree">🌲</span><label><input type="checkbox" id="fr" checked> رایگان</label></div><div id="md" class="g"><p id="mt"></p><input id="mi" maxlength="120"><div><button id="mok">تأیید</button><button id="mno">انصراف</button></div></div>`);
 $('side').insertAdjacentHTML('beforeend','<div id="bn" class="btn g" title="نمایش/پنهان نام‌ها"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.9 3.1-6.2 7-6.2s7 2.3 7 6.2"/></svg></div><div id="bm" class="btn g" title="قطع صدا"></div><div id="ba" class="btn g" title="ابزار مدیر"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg></div>');
 $('tier').insertAdjacentHTML('beforeend','<span id="clk"></span>');
 // ── جاده‌های متصل + چراغ خیابان
@@ -228,6 +229,40 @@ $('bn').onclick=()=>{namesOn=!namesOn;$('bn').classList.toggle('dim',!namesOn);t
 $('ba').onclick=async()=>{if(!T){const k=await ask('رمز مدیر (ADMIN_KEY)','',1);if(!k)return;try{const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k})}),j=await r.json();if(!r.ok)return toast(j.error||'رمز اشتباه است');T=localStorage.tk=j.token}catch(_){return toast('خطا در اتصال')}}setAdm(!admOn)};
 $('btm').onclick=async()=>{const e=W.env||{mode:'live'},seq=[['live',0,'🕒 زمان زنده'],['lapse',0,'⏩ گذر سریع روز'],['fixed',12,'☀️ ظهر ثابت'],['fixed',19,'🌇 غروب ثابت'],['fixed',23,'🌙 شب ثابت']],i=seq.findIndex(s=>s[0]===e.mode&&(e.mode!=='fixed'||Math.round(e.hour)===s[1])),n=seq[(i+1)%seq.length];toast(n[2]);api('/api/admin/env','POST',{mode:n[0],hour:n[1]}).catch(()=>0)};
 if(!new URLSearchParams(location.search).has('admin'))$('ba').style.display='none';else if(T)setAdm(1);
+// ── ضبط ویدیوی بازی (فقط پنل مدیر): تصویر سه‌بعدی + موسیقی بازی، با کیفیت بالا؛ در پایان فایل کامل ذخیره می‌شود
+const RC={on:0};let rec=null,rch=[],rbytes=0,rt0=0,racc=0,rtick=0,rAud=null,rUrl='';const RCAP=380*1048576,RFPS=30,
+RMT=['video/mp4;codecs=avc1.640033,mp4a.40.2','video/mp4;codecs=avc1,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+document.body.insertAdjacentHTML('beforeend','<div id="rect" class="g">● <span></span></div>');
+const rsec=()=>Math.floor((racc+(rt0?performance.now()-rt0:0))/1000),r2=n=>String(n).padStart(2,'0');
+function recStart(){
+if(!window.MediaRecorder||!R.domElement.captureStream)return toast('این مرورگر از ضبط ویدیو پشتیبانی نمی‌کند');
+const mt=RMT.find(t=>MediaRecorder.isTypeSupported(t));if(!mt)return toast('قالب ویدیو در این مرورگر پشتیبانی نمی‌شود');
+if(rUrl){URL.revokeObjectURL(rUrl);rUrl=''}
+const pr=Math.min(Math.max(devicePixelRatio||1,1.5),2.5),w=Math.floor(innerWidth*pr)&~1,h=Math.floor(innerHeight*pr)&~1; // وضوح بالاتر، ابعاد زوج برای انکودر
+RC.on=1;R.setPixelRatio(1);R.setSize(w,h,false);
+let st=R.domElement.captureStream(RFPS);const vt=st.getVideoTracks();rAud=null;
+try{const a=window.__tribeAudio&&window.__tribeAudio();if(a&&a.ac&&a.out&&a.ac.state==='running'){const d=a.ac.createMediaStreamDestination();a.out.connect(d);rAud={d,out:a.out};st=new MediaStream([...vt,...d.stream.getAudioTracks()])}}catch(e){rAud=null}
+try{rec=new MediaRecorder(st,{mimeType:mt,videoBitsPerSecond:Math.round(Math.max(8e6,Math.min(24e6,w*h*RFPS*.2))),audioBitsPerSecond:192000})}catch(e){recEnd();return toast('شروع ضبط ممکن نشد')}
+rch=[];rbytes=0;
+rec.ondataavailable=e=>{if(e.data&&e.data.size){rch.push(e.data);rbytes+=e.data.size;if(rbytes>RCAP&&rec&&rec.state!=='inactive'){toast('به سقف حجم رسید؛ ویدیو ذخیره می‌شود');recStop()}}};
+rec.onerror=()=>{toast('خطا در ضبط؛ آنچه ضبط شده ذخیره می‌شود');recStop()};
+rec.onstop=()=>recSave(mt);
+rec.start(1000);racc=0;rt0=performance.now();
+$('brec').classList.add('rec');const el=$('rect');el.classList.add('on');el.lastChild.textContent='۰۰:۰۰';
+rtick=setInterval(()=>{const s=rsec();el.lastChild.textContent=fa(r2(s/60|0))+':'+fa(r2(s%60))},500);
+toast('ضبط شروع شد؛ برای پایان دوباره روی 🎥 بزن')}
+function recStop(){if(rec&&rec.state!=='inactive'){try{if(rec.state==='paused')rec.resume();rec.stop()}catch(e){recSave('')}}}
+function recEnd(){clearInterval(rtick);$('brec').classList.remove('rec');$('rect').classList.remove('on');
+if(rAud){try{rAud.out.disconnect(rAud.d)}catch(e){}rAud=null}
+if(RC.on){RC.on=0;R.setPixelRatio(Math.min(devicePixelRatio,2));R.setSize(innerWidth,innerHeight);onRes()}}
+function recSave(mt){recEnd();const parts=rch;rch=[];rec=null;if(!parts.length)return toast('چیزی ضبط نشد');
+const type=(mt||'video/webm').split(';')[0],blob=new Blob(parts,{type}),d=new Date(),n='tribe-world-'+d.getFullYear()+r2(d.getMonth()+1)+r2(d.getDate())+'-'+r2(d.getHours())+r2(d.getMinutes())+r2(d.getSeconds())+(type.includes('mp4')?'.mp4':'.webm');
+rUrl=URL.createObjectURL(blob);const a=document.createElement('a');a.href=rUrl;a.download=n;document.body.appendChild(a);a.click();a.remove();
+toast('✅ ویدیو ذخیره شد · '+fa(blob.size/1048576,0)+' مگابایت')}
+document.addEventListener('visibilitychange',()=>{if(!rec||rec.state==='inactive')return; // وقتی صفحه پنهان شد، ضبط مکث می‌کند تا فریم‌های یخ‌زده ذخیره نشود
+if(document.hidden){if(rec.state==='recording'){rec.pause();racc+=performance.now()-rt0;rt0=0}}else if(rec.state==='paused'){rec.resume();rt0=performance.now()}});
+addEventListener('beforeunload',e=>{if(rec&&rec.state!=='inactive'){e.preventDefault();e.returnValue=''}});
+$('brec').onclick=()=>RC.on?recStop():recStart();
 // ── ظاهر بنیان‌گذار: هکر نئونی (پالتوی تاریک، گاگل، چشم سبز، دورخط درخشان)
 let fL=null;
 function founderLook(c){const g=c.g,DK=new THREE.MeshStandardMaterial({color:0x16231e,roughness:.7}),CT=new THREE.MeshStandardMaterial({color:0x2a3d35,roughness:.8,emissive:0x0b2a1a,emissiveIntensity:.5,side:THREE.DoubleSide}),GL=new THREE.MeshBasicMaterial({color:0x39ff88}),OL=new THREE.MeshBasicMaterial({color:0x2fd67a,side:THREE.BackSide});
@@ -426,7 +461,7 @@ for(let h=0;h<2;h++){const d=ir.getChannelData(h);for(let i=0;i<len;i++)d[i]=(Ma
 cv.buffer=ir;wet.gain.value=.3;bus.connect(m);bus.connect(cv);cv.connect(wet);wet.connect(m);cp.threshold.value=-14;cp.ratio.value=4;m.connect(cp);cp.connect(dest);return{bus,m}}
 return{E,V:.24,N:MEL.length,step,chain}})();
 /*MUS-END*/
-(()=>{let ac=null,o=null,nt=0,sn=0,muted=localStorage.mute==='1';const bm=$('bm'),S='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">',
+(()=>{let ac=null,o=null,nt=0,sn=0,muted=localStorage.mute==='1';window.__tribeAudio=()=>({ac,out:o&&o.m});const bm=$('bm'),S='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">',
 I1=S+'<path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.5 7.5 0 0 1 0 10.4"/></svg>',I0=S+'<path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>',
 paint=()=>{bm.innerHTML=muted?I0:I1;bm.title=muted?'پخش موسیقی':'قطع صدا'};
 function boot(){if(ac)return true;const A=window.AudioContext||window.webkitAudioContext;if(!A)return false;ac=new A();o=MU.chain(ac,ac.destination);o.m.gain.value=0;nt=ac.currentTime+.15;
@@ -442,7 +477,7 @@ let tm=0,si=0;function say(i){clearTimeout(tm);si=i;if(i>=story.length){$('cap')
 let ty;function typ(t){clearInterval(ty);let n=0;$('ct').textContent='';ty=setInterval(()=>{$('ct').textContent=t.slice(0,++n);if(n>=t.length)clearInterval(ty)},28)}
 $('cap').onclick=()=>say(si+1);$('bs').onclick=()=>say(0);$('be').onclick=()=>{const e=$('ev');e.style.display=e.style.display==='block'?'none':'block'};
 await poll();setInterval(poll,3000);localStorage.seen?$('cap').style.display='none':say(0);
-addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight)});
+const onRes=()=>{if(RC.on)return;cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight)};addEventListener('resize',onRes);
 const ck=new THREE.Clock(),START=new THREE.Vector3(46,52,56);let intro=0;ctl.enabled=false;
 R.setAnimationLoop(()=>{const dt=Math.min(ck.getDelta(),.1),t=ck.elapsedTime;envStep(dt);
 for(const k in disp){disp[k]+=(tgt[k]-disp[k])*Math.min(1,dt*5);const v=Math.abs(tgt[k]-disp[k])<.05?tgt[k]:disp[k],txt=fa(v,k==='money'?1:0);if(last[k]!==txt){last[k]=txt;$('v_'+k).textContent=txt}}
