@@ -43,12 +43,13 @@ const css=document.createElement('style');css.textContent=`#cin{position:fixed;l
 #cg{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:34dvh;overflow:auto}#cg button{padding:11px 6px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--cream);font:inherit;cursor:pointer}#cg button:active{background:var(--gold);color:#2b1a00}#cg .w{grid-column:1/-1;background:rgba(255,194,71,.18)}
 #cst{position:fixed;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));z-index:41;display:none;padding:10px 20px;border-radius:22px;background:rgba(255,77,61,.85);color:#fff;font:800 13px inherit;border:0;cursor:pointer}body.rch #cin,body.rch #cst{display:none!important}`;document.head.appendChild(css);
 const P=document.createElement('div');P.id='cin';
-P.innerHTML='<h4><b>🎬 استودیوی سینمایی</b><span data-x>✕</span></h4><div class="cs" id="cm"><b data-m="0">👁 پیش‌نمایش</b><b data-m="1">⏺ ضبط خودکار</b></div><div class="cs" id="cp"><b data-s=".75">آهسته</b><b data-s="1">عادی</b><b data-s="1.5">سریع</b></div><div id="cg">'+EFFECTS.map(e=>`<button data-e="${e.id}"${e.w?' class="w"':''}>${e.ic} ${e.n}</button>`).join('')+'</div>';
+P.innerHTML='<h4><b>🎬 استودیوی سینمایی</b><span data-x>✕</span></h4><div class="cs" id="cm"><b data-m="0">👁 پیش‌نمایش</b><b data-m="1">⏺ ضبط خودکار</b></div><div class="cs" id="cp"><b data-s=".75">آهسته</b><b data-s="1">عادی</b><b data-s="1.5">سریع</b></div><div class="cs" id="cq"><b data-q="">کیفیت کامل</b><b data-q="low">حالت سبک (لپتاپ ضعیف)</b></div><div id="cg">'+EFFECTS.map(e=>`<button data-e="${e.id}"${e.w?' class="w"':''}>${e.ic} ${e.n}</button>`).join('')+'</div>';
 document.body.appendChild(P);
 const B=document.createElement('button');B.id='cst';B.textContent='⏹ توقف';document.body.appendChild(B);B.onclick=stop;
-const sync=()=>{P.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',+x.dataset.m===recM));P.querySelectorAll('[data-s]').forEach(x=>x.classList.toggle('on',+x.dataset.s===spd))};sync();
-P.onclick=e=>{const t=e.target.closest('[data-m],[data-s],[data-e],[data-x]');if(!t)return;
+const sync=()=>{P.querySelectorAll('[data-q]').forEach(x=>x.classList.toggle('on',(x.dataset.q==='low')===!!a.low));P.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',+x.dataset.m===recM));P.querySelectorAll('[data-s]').forEach(x=>x.classList.toggle('on',+x.dataset.s===spd))};sync();
+P.onclick=e=>{const t=e.target.closest('[data-m],[data-s],[data-e],[data-x],[data-q]');if(!t)return;
 if('x' in t.dataset)return P.classList.remove('on');
+if(t.dataset.q!=null){try{t.dataset.q?localStorage.tq='low':localStorage.tq='high'}catch(x){}history.replaceState(null,'',location.pathname);return location.reload()}
 if(t.dataset.m!=null){recM=+t.dataset.m;st('rec',recM);return sync()}
 if(t.dataset.s!=null){spd=+t.dataset.s;st('sp',spd);return sync()}
 go(EFFECTS.find(x=>x.id===t.dataset.e))};

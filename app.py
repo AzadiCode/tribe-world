@@ -527,6 +527,10 @@ def index(): return send_from_directory(HERE, "index.html")
 def cinema_js(): return send_from_directory(HERE, "cinema.js", mimetype="application/javascript")
 
 
+@app.get("/hudcap.js")
+def hudcap_js(): return send_from_directory(HERE, "hudcap.js", mimetype="application/javascript")
+
+
 @app.get("/admin")
 def admin_page(): return send_from_directory(HERE, "admin.html")
 
