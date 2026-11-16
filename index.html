@@ -508,7 +508,7 @@ addEventListener('beforeunload',e=>{if(rec&&rec.state!=='inactive'){e.preventDef
 $('brec').onclick=()=>RC.on?recStop():recStart();
 $('brec2').onclick=()=>rec?recStop():CIN?CIN.toggle():recStartUI();
 import('/hudcap.js').then(m=>HUDM=m).catch(e=>console.warn('hudcap',e));
-import('/cinema.js').then(m=>{CIN=m.initCinema({cam,ctl,toast,low:LOW,center:()=>ctr,radius:()=>RAD,hq:()=>hqH,rec:{start:()=>(MOB0||!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia))?recStart():recStartUI(),stop:recStop,on:()=>!!rec}})}).catch(e=>console.warn('cinema',e));
+import('/cinema.js').then(m=>{CIN=m.initCinema({cam,ctl,toast,dom:R.domElement,low:LOW,center:()=>ctr,radius:()=>RAD,hq:()=>hqH,rec:{start:()=>(MOB0||!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia))?recStart():recStartUI(),stop:recStop,on:()=>!!rec}})}).catch(e=>console.warn('cinema',e));
 addEventListener('keydown',e=>{if(e.key==='F8'){e.preventDefault();rec?recStop():recStartUI()}});
 // ── ظاهر بنیان‌گذار: هکر نئونی (پالتوی تاریک، گاگل، چشم سبز، دورخط درخشان)
 let fL=null;

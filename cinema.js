@@ -15,24 +15,26 @@ const EFFECTS=[
 {id:'fly',ic:'🏙️',n:'عبور از میان شهر',k:(b,c,h,R)=>[K(0,b,1.1,16,[c[0]-R,1,c[2]+R*.3]),K(4,b+.5,1.05,14,[c[0]-R*.3,1,c[2]]),K(8,b+1,1.1,15,[c[0]+R*.3,1,c[2]-R*.2]),K(12,b+1.6,1,20,[c[0]+R,1,c[2]-R*.4])]},
 {id:'full',ic:'✨',n:'سکانس کامل (ابرها ← خانه مدیرعامل ← چرخش)',w:1,k:(b,c,h)=>[K(0,b+.6,.1,160,c),K(5,b+1.7,.5,80,c),K(10,b+2.9,.9,32,c),K(15,b+3.9,.75,26,mix(c,h,.5)),K(20,b+5,.6,14,h),K(24,b+6.2,.55,11,h),K(30,b+7.4,.8,36,c)]}];
 // ── موتور حرکت
-let S=null,saved=null,busy=0,ab=0,recM=0,spd=1;
+let S=null,saved=null,busy=0,ab=0,recM=0,spd=1,zm=1,zt=1;
 const g=k=>{try{return localStorage['cin_'+k]}catch(e){}},st=(k,v)=>{try{localStorage['cin_'+k]=v}catch(e){}};
 recM=+g('rec')||0;spd=+g('sp')||1;
 const cr=(p,q,r,s,u)=>.5*(2*q+(-p+r)*u+(2*p-5*q+4*r-s)*u*u+(-p+3*q-3*r+s)*u*u*u);
 function at(ks,t){let i=0;while(i<ks.length-2&&t>ks[i+1][0])i++;const A=ks[Math.max(0,i-1)],B=ks[i],C=ks[i+1],D=ks[Math.min(ks.length-1,i+2)],u=Math.min(1,Math.max(0,(t-B[0])/((C[0]-B[0])||1)));
 return[1,2,3,4,5,6].map(j=>{const f=j==3?Math.log:x=>x,v=cr(f(A[j]),f(B[j]),f(C[j]),f(D[j]),u);return j==3?Math.exp(v):v})}
-function put(p){const[az,po,di,x,y,z]=p;ctl.target.set(x,y,z);cam.position.set(x+di*Math.sin(po)*Math.sin(az),y+di*Math.cos(po),z+di*Math.sin(po)*Math.cos(az))}
+function put(p){const[az,po,di0,x,y,z]=p,di=Math.min(400,Math.max(3,di0*zm));ctl.target.set(x,y,z);cam.position.set(x+di*Math.sin(po)*Math.sin(az),y+di*Math.cos(po),z+di*Math.sin(po)*Math.cos(az))}
 function relax(){if(!saved)saved={a:ctl.minDistance,b:ctl.maxDistance,c:ctl.minPolarAngle,d:ctl.maxPolarAngle};Object.assign(ctl,{minDistance:3,maxDistance:400,minPolarAngle:.02,maxPolarAngle:1.5})}
 function restore(){if(!saved)return;Object.assign(ctl,{minDistance:saved.a,maxDistance:saved.b,minPolarAngle:saved.c,maxPolarAngle:saved.d});saved=null}
 function inLim(){if(!saved)return 1;const d=cam.position.distanceTo(ctl.target),p=Math.acos((cam.position.y-ctl.target.y)/d);return d>=saved.a&&d<=saved.b&&p>=saved.c&&p<=saved.d}
 ctl.addEventListener('end',()=>{if(saved&&!busy&&inLim())restore()});
 const play=ks=>new Promise(r=>{S={ks,D:ks[ks.length-1][0],t:0,fin:r}});
-function step(dt){if(!S)return;S.t+=dt*spd;const p=Math.min(1,S.t/S.D),q=p*p*p*(p*(6*p-15)+10);put(at(S.ks,q*S.D));if(p>=1){const f=S.fin;S=null;f()}}
+function step(dt){if(!S)return;zm+=(zt-zm)*Math.min(1,dt*9);S.t+=dt*spd;const p=Math.min(1,S.t/S.D),q=p*p*p*(p*(6*p-15)+10);put(at(S.ks,q*S.D));if(p>=1){const f=S.fin;S=null;f()}}
 function stop(){if(!S)return;ab=1;const f=S.fin;S=null;f()}
 async function go(e){if(busy)return;if(!ctl.enabled)return toast('صبر کن معرفی بازی تمام شود');
 busy=1;ab=0;P.classList.remove('on');
 const c=a.center(),h=a.hq(),C=[c[0],0,c[1]],H=h?[h.x,1.2,h.z]:C,b=Math.atan2(cam.position.x-ctl.target.x,cam.position.z-ctl.target.z),ks=e.k(b,C,H,Math.max(8,a.radius()||10));
-relax();ctl.enabled=false;ctl.enableDamping=false;put(at(ks,0));B.style.display='block';
+// شروع افکت از همان نمای فعلی خودِ بازیکن (نه از یک نقطه‌ی ثابت)
+{const T=ctl.target,d=cam.position.distanceTo(T),po=Math.acos(Math.max(-1,Math.min(1,(cam.position.y-T.y)/d)));ks[0]=K(0,b,po,d,[T.x,T.y,T.z])}
+zm=zt=1;relax();ctl.enabled=false;ctl.enableDamping=false;put(at(ks,0));B.style.display='block';
 let rc=0;const had=rec.on(); // ضبط از قبل روشن است؟ (بعد از توقف افکت، ضبط ادامه دارد)
 if(recM||had){if(!had){try{await rec.start()}catch(x){}}rc=rec.on();if(!rc){fin();return}if(!had)await sl(900)}
 await play(ks);const keep=rc&&(ab||had);if(rc&&!keep){await sl(1300);rec.stop()}fin(keep)}
@@ -55,4 +57,10 @@ if(t.dataset.m!=null){recM=+t.dataset.m;st('rec',recM);return sync()}
 if(t.dataset.s!=null){spd=+t.dataset.s;st('sp',spd);return sync()}
 go(EFFECTS.find(x=>x.id===t.dataset.e))};
 addEventListener('keydown',e=>{if(e.key==='Escape'&&busy)stop()});
+// زوم دستی نرم هنگام اجرای افکت (چرخ ماوس / دو انگشت)
+const dm=a.dom||document,pts=new Map();let pd=0;const zc=v=>Math.min(4,Math.max(.25,v));
+dm.addEventListener('wheel',e=>{if(!S)return;e.preventDefault();zt=zc(zt*Math.exp(e.deltaY*.0015))},{passive:false});
+dm.addEventListener('pointerdown',e=>{pts.set(e.pointerId,[e.clientX,e.clientY]);pd=0});
+dm.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;pts.set(e.pointerId,[e.clientX,e.clientY]);if(!S||pts.size!==2)return;const[p,q]=[...pts.values()],d=Math.hypot(p[0]-q[0],p[1]-q[1]);if(pd&&d)zt=zc(zt*pd/d);pd=d});
+const pu=e=>{pts.delete(e.pointerId);pd=0};dm.addEventListener('pointerup',pu);dm.addEventListener('pointercancel',pu);
 return{step,toggle:()=>P.classList.toggle('on'),open:()=>P.classList.add('on'),run:id=>go(EFFECTS.find(x=>x.id===id)),stop,EFFECTS}}
