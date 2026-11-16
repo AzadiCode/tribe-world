@@ -631,7 +631,8 @@ const hb=new THREE.Mesh(HBG,HBM);hb.position.y=.5;g.add(hb);c.i=i;g.userData.cit
 const el=document.createElement('div');el.className='nt';el.innerHTML='<b></b>';$('nts').appendChild(el);c.el=el;c.nb=el.firstChild;c.nb.textContent=nameOf(i);
 const p=freeNear(ctr[0],ctr[1],Math.min(RAD*.85,5+i*.5));g.position.set(p[0],0,p[1]);scene.add(g);return c}
 try{if(!/classic/.test(location.search)){INST=initInst();HARD=MOB?320:640;VIS=MOB?90:180}}catch(e){console.error('instancing off',e);INST=null}
-function tune(){const mx=Math.min(POP,HARD),MIN=MOB?24:36;vcT+=1.5;if(vcT>=8){vcT=0;if(VCAP<1e9)VCAP=Math.ceil(VCAP*1.12)+3}
+function tune(){if(RC.on||rec){fpsUp=0;return} // هنگام ضبط، سیستم خودکار کاهش شهروندان خاموش است تا کسی از بازی ناپدید نشود
+const mx=Math.min(POP,HARD),MIN=MOB?24:36;vcT+=1.5;if(vcT>=8){vcT=0;if(VCAP<1e9)VCAP=Math.ceil(VCAP*1.12)+3}
 if(fpsA<27&&VIS>MIN){VIS=Math.max(MIN,Math.floor(VIS*.85));VCAP=VIS+4;fitCits();fpsUp=0}
 else if(fpsA<24&&VIS<=MIN&&PRX>(LOW?.76:1.01)&&!RC.on){PRX=Math.max(LOW?.75:1,PRX-.25);R.setPixelRatio(PRX);onRes();fpsUp=0}
 else if(fpsA>50&&VIS<mx&&VIS<VCAP){if(++fpsUp>=2){VIS=Math.min(mx,VCAP,Math.ceil(VIS*1.1)+3);fitCits();fpsUp=0}}
