@@ -1,218 +1,29 @@
-/*
- * Tribe World — faithful HUD capture
- * Renders the real #res and #bot DOM trees through SVG foreignObject instead
- * of redrawing text/icons by hand. Computed styles, SVGs, pseudo-elements,
- * borders, gradients, shadows, font settings and layout are retained.
- * The WebGL scene remains the original renderer canvas.
- */
-export function createHudCapture(src, roots) {
-  const out = document.createElement('canvas');
-  out.width = src.width;
-  out.height = src.height;
-  const ctx = out.getContext('2d', { alpha: false });
-  const scaleX = () => out.width / Math.max(1, innerWidth);
-  const scaleY = () => out.height / Math.max(1, innerHeight);
-  const layers = new Map();
-  const jobs = new Map();
-  let last = 0;
-  let stopped = false;
-
-  const px = n => Number.parseFloat(n) || 0;
-  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-  function copyComputed(source, target, pseudo = null) {
-    const cs = getComputedStyle(source, pseudo);
-    let css = '';
-    for (let i = 0; i < cs.length; i++) {
-      const name = cs[i];
-      // Backdrop blur is painted from the actual game canvas below. Keeping it
-      // in the isolated SVG would blur transparency instead of the 3D scene.
-      if (name === 'backdrop-filter' || name === '-webkit-backdrop-filter') continue;
-      const value = cs.getPropertyValue(name);
-      if (value) css += `${name}:${value};`;
-    }
-    target.setAttribute('style', css);
-    return cs;
-  }
-
-  function pseudoNode(source, which) {
-    const cs = getComputedStyle(source, which);
-    const content = cs.content;
-    if (!content || content === 'none' || content === 'normal' || content === '""' || content === "''") return null;
-    const node = document.createElement('span');
-    let css = '';
-    for (let i = 0; i < cs.length; i++) {
-      const name = cs[i];
-      if (name === 'content' || name === 'backdrop-filter' || name === '-webkit-backdrop-filter') continue;
-      const value = cs.getPropertyValue(name);
-      if (value) css += `${name}:${value};`;
-    }
-    node.setAttribute('style', css);
-    // Most pseudo-elements in this HUD use plain textual/symbol content.
-    if ((content[0] === '"' && content.at(-1) === '"') || (content[0] === "'" && content.at(-1) === "'")) {
-      node.textContent = content.slice(1, -1).replace(/\\A/g, '\n').replace(/\\(["'])/g, '$1');
-    }
-    return node;
-  }
-
-  function cloneStyled(source) {
-    const clone = source.cloneNode(false);
-    copyComputed(source, clone);
-
-    if (source instanceof HTMLInputElement || source instanceof HTMLTextAreaElement || source instanceof HTMLSelectElement) {
-      try { clone.value = source.value; } catch (_) {}
-      if (source instanceof HTMLInputElement && (source.type === 'checkbox' || source.type === 'radio')) clone.checked = source.checked;
-    }
-
-    if (source instanceof HTMLCanvasElement) {
-      try {
-        const image = document.createElement('img');
-        image.src = source.toDataURL('image/png');
-        image.setAttribute('style', `width:${source.width}px;height:${source.height}px;`);
-        return image;
-      } catch (_) { return clone; }
-    }
-
-    const before = pseudoNode(source, '::before');
-    if (before) clone.appendChild(before);
-    for (const child of source.childNodes) {
-      if (child.nodeType === Node.TEXT_NODE) clone.appendChild(document.createTextNode(child.nodeValue || ''));
-      else if (child.nodeType === Node.ELEMENT_NODE) clone.appendChild(cloneStyled(child));
-    }
-    const after = pseudoNode(source, '::after');
-    if (after) clone.appendChild(after);
-    return clone;
-  }
-
-  function roundedPath(c, x, y, w, h, radius) {
-    const r = Math.max(0, Math.min(radius, w / 2, h / 2));
-    c.beginPath();
-    c.moveTo(x + r, y);
-    c.arcTo(x + w, y, x + w, y + h, r);
-    c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r);
-    c.arcTo(x, y, x + w, y, r);
-    c.closePath();
-  }
-
-  // Paint the real scene blurred behind translucent glass HUD cards. The
-  // overlay SVG itself is rendered separately, so backdrop-filter needs this.
-  function paintBackdropFilters(root) {
-    const sx = scaleX(), sy = scaleY();
-    const all = [root, ...root.querySelectorAll('*')];
-    for (const el of all) {
-      const cs = getComputedStyle(el);
-      const filter = cs.backdropFilter || cs.webkitBackdropFilter || 'none';
-      if (!filter || filter === 'none') continue;
-      const m = filter.match(/blur\(([-\d.]+)px\)/i);
-      const blur = m ? Math.max(0, px(m[1])) : 0;
-      const r = el.getBoundingClientRect();
-      if (r.width <= 0 || r.height <= 0) continue;
-      const x = r.left * sx, y = r.top * sy, w = r.width * sx, h = r.height * sy;
-      const rad = px(cs.borderTopLeftRadius) * Math.min(sx, sy);
-      ctx.save();
-      roundedPath(ctx, x, y, w, h, rad);
-      ctx.clip();
-      ctx.filter = `${blur ? `blur(${blur * Math.max(sx, sy)}px)` : ''} ${filter.includes('saturate') ? filter.match(/saturate\([^)]*\)/)[0] : ''}`.trim() || 'none';
-      // Draw a slightly expanded source region to avoid clear edges after blur.
-      const pad = Math.ceil(blur * 2 * Math.max(sx, sy));
-      ctx.drawImage(src, Math.max(0, x - pad), Math.max(0, y - pad), Math.min(src.width, w + pad * 2), Math.min(src.height, h + pad * 2), Math.max(0, x - pad), Math.max(0, y - pad), Math.min(src.width, w + pad * 2), Math.min(src.height, h + pad * 2));
-      ctx.restore();
-    }
-    ctx.filter = 'none';
-  }
-
-  function renderRoot(selector, el) {
-    const r = el.getBoundingClientRect();
-    if (r.width < 1 || r.height < 1 || r.right <= 0 || r.bottom <= 0 || r.left >= innerWidth || r.top >= innerHeight) return;
-    let state = layers.get(selector);
-    if (!state) {
-      state = { canvas: document.createElement('canvas'), busy: false, visible: false, x: 0, y: 0, w: 0, h: 0, url: null };
-      layers.set(selector, state);
-    }
-    const sx = scaleX(), sy = scaleY();
-    const w = Math.max(1, Math.round(r.width * sx));
-    const h = Math.max(1, Math.round(r.height * sy));
-    state.x = r.left * sx; state.y = r.top * sy; state.w = w; state.h = h; state.visible = true;
-    if (state.canvas.width !== w || state.canvas.height !== h) {
-      state.canvas.width = w; state.canvas.height = h;
-    }
-    if (state.busy) return;
-    state.busy = true;
-
-    try {
-      const clone = cloneStyled(el);
-      // The root is positioned at its measured viewport coordinates by the
-      // destination canvas; reset only its outer placement, not inner styling.
-      const rootStyle = clone.getAttribute('style') || '';
-      clone.setAttribute('style', `${rootStyle};position:relative!important;left:0!important;top:0!important;right:auto!important;bottom:auto!important;margin:0!important;width:${r.width}px!important;height:${r.height}px!important;max-width:none!important;max-height:none!important;transform:none!important;`);
-      const markup = new XMLSerializer().serializeToString(clone);
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xhtml="http://www.w3.org/1999/xhtml" width="${w}" height="${h}" viewBox="0 0 ${r.width} ${r.height}"><foreignObject x="0" y="0" width="${r.width}" height="${r.height}"><div xmlns="http://www.w3.org/1999/xhtml" style="width:${r.width}px;height:${r.height}px;overflow:visible;direction:${getComputedStyle(el).direction};">${markup}</div></foreignObject></svg>`;
-      const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const img = new Image();
-      state.url = url;
-      img.onload = () => {
-        try {
-          const c = state.canvas.getContext('2d');
-          c.clearRect(0, 0, w, h);
-          c.drawImage(img, 0, 0, w, h);
-        } catch (e) { console.warn('HUD layer render failed', selector, e); }
-        URL.revokeObjectURL(url);
-        if (state.url === url) state.url = null;
-        state.busy = false;
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        if (state.url === url) state.url = null;
-        state.busy = false;
-        console.warn('HUD SVG rendering is not supported for', selector);
-      };
-      img.src = url;
-    } catch (e) {
-      state.busy = false;
-      console.warn('HUD capture failed', selector, e);
-    }
-  }
-
-  function frame() {
-    if (stopped) return;
-    const now = performance.now();
-    if (now - last < 20) return;
-    last = now;
-    const sx = scaleX(), sy = scaleY();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.globalAlpha = 1;
-    ctx.filter = 'none';
-    ctx.drawImage(src, 0, 0, out.width, out.height);
-
-    for (const selector of roots) {
-      const el = document.querySelector(selector);
-      const state = layers.get(selector);
-      if (!el) { if (state) state.visible = false; continue; }
-      renderRoot(selector, el);
-    }
-
-    // Recreate glass blur from the real WebGL frame, then place exact DOM layers.
-    for (const selector of roots) {
-      const el = document.querySelector(selector);
-      const state = layers.get(selector);
-      if (el && state && state.visible) paintBackdropFilters(el);
-      if (state && state.visible && state.canvas.width && state.canvas.height) {
-        ctx.globalAlpha = 1;
-        ctx.drawImage(state.canvas, state.x, state.y, state.w, state.h);
-      }
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  return {
-    canvas: out,
-    frame,
-    destroy() {
-      stopped = true;
-      for (const state of layers.values()) if (state.url) URL.revokeObjectURL(state.url);
-      layers.clear();
-    }
-  };
-}
+// ═══ ضبط رابط روی موبایل ═══ همان عنصرهای واقعی صفحه (منابع، مرحله، هدف، مکالمه، اسم و حرف شهروندان) را روی هر فریم ضبط می‌کشد.
+// ساده و بدون کتابخانه: پس‌زمینه، دورخط، متن و آیکن SVG. (بدون محو شیشه‌ای و سایه.) برای ضبط عنصر جدید فقط سلکتورش را به ROOTS در index.html اضافه کن.
+export function createHudCapture(src,roots){
+const cv=document.createElement('canvas'),x=cv.getContext('2d'),imgs=new Map(),P=v=>parseFloat(v)||0;
+cv.width=src.width;cv.height=src.height;let last=0;
+const alpha=c=>{if(!c||c==='transparent')return 0;const m=c.match(/rgba?\(([^)]+)\)/);if(!m)return 1;const p=m[1].split(/[ ,\/]+/);return p.length>3?+p[3]:1};
+function rr(l,t,w,h,r){r=Math.min(r,w/2,h/2);x.beginPath();x.roundRect?x.roundRect(l,t,w,h,r):x.rect(l,t,w,h)}
+function svg(el,r,cs){const c=el.cloneNode(true);c.setAttribute('xmlns','http://www.w3.org/2000/svg');c.setAttribute('width',r.width);c.setAttribute('height',r.height);
+// استایل‌های CSS (fill/stroke…) داخل تصویر SVG اعمال نمی‌شوند؛ مقدار نهایی‌شان را روی خود SVG می‌نویسیم تا آیکن‌ها سیاه و توپر نشوند
+[['fill','fill'],['stroke','stroke'],['stroke-width','strokeWidth'],['stroke-linecap','strokeLinecap'],['stroke-linejoin','strokeLinejoin']].forEach(([a,b])=>{if(cs[b])c.setAttribute(a,cs[b])});
+let s=c.outerHTML.replace(/currentColor/g,cs.color);
+let i=imgs.get(s);if(!i){i=new Image();i.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);imgs.set(s,i);if(imgs.size>200)imgs.delete(imgs.keys().next().value)}if(i.complete&&i.naturalWidth)x.drawImage(i,r.left,r.top,r.width,r.height)}
+function text(node,el,cs,sc){const t=node.nodeValue.replace(/\s+/g,' ').trim();if(!t)return;const rg=document.createRange();rg.selectNodeContents(node);const rs=[...rg.getClientRects()].filter(q=>q.width>0);if(!rs.length)return;
+x.font=`${cs.fontStyle} ${cs.fontWeight} ${P(cs.fontSize)*sc}px ${cs.fontFamily}`;x.fillStyle=cs.color;x.textBaseline='middle';const rtl=cs.direction==='rtl';x.direction=rtl?'rtl':'ltr';x.textAlign=rtl?'right':'left';
+const put=(s,q)=>x.fillText(s,rtl?q.right:q.left,(q.top+q.bottom)/2);
+if(rs.length===1)return put(t,rs[0]);
+const v=node.nodeValue;let cur='',ct=null,cq=null;for(let i=0;i<v.length;i++){rg.setStart(node,i);rg.setEnd(node,i+1);const q=rg.getClientRects()[0];if(!q)continue;if(ct!==null&&Math.abs(q.top-ct)>3){put(cur.trim(),cq);cur=''}if(ct===null||Math.abs(q.top-ct)>3){ct=q.top;cq={left:q.left,right:q.right,top:q.top,bottom:q.bottom}}else{cq.left=Math.min(cq.left,q.left);cq.right=Math.max(cq.right,q.right)}cur+=v[i]}if(cur.trim())put(cur.trim(),cq)}
+function walk(el,al){if(el.style&&el.style.display==='none')return;const cs=getComputedStyle(el);if(cs.display==='none'||cs.visibility==='hidden')return;const op=al*(+cs.opacity);if(op<=.01)return;const r=el.getBoundingClientRect();
+if(r.width<1||r.height<1||r.right<0||r.bottom<0||r.left>innerWidth||r.top>innerHeight)return;x.globalAlpha=op;
+if(el.tagName&&el.tagName.toLowerCase()==='svg')return svg(el,r,cs);
+const ba=alpha(cs.backgroundColor),bw=P(cs.borderTopWidth),rad=cs.borderTopLeftRadius,R=rad.includes('%')?Math.min(r.width,r.height)*P(rad)/100:P(rad);
+if(ba>0){x.fillStyle=cs.backgroundColor;rr(r.left,r.top,r.width,r.height,R);x.fill()}
+if(bw>0&&alpha(cs.borderTopColor)>0&&cs.borderTopStyle!=='none'){x.strokeStyle=cs.borderTopColor;x.lineWidth=bw;rr(r.left,r.top,r.width,r.height,R);x.stroke()}
+const sc=el.offsetWidth?r.width/el.offsetWidth:1;
+for(const n of el.childNodes){if(n.nodeType===3)text(n,el,cs,sc);else if(n.nodeType===1)walk(n,op)}x.globalAlpha=al}
+function frame(){const n=performance.now();if(n-last<28)return;last=n;
+x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.drawImage(src,0,0);x.setTransform(cv.width/innerWidth,0,0,cv.height/innerHeight,0,0);
+try{roots.forEach(s=>document.querySelectorAll(s).forEach(e=>walk(e,1)))}catch(e){}x.globalAlpha=1}
+return{canvas:cv,frame}}

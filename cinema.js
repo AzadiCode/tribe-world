@@ -21,7 +21,8 @@ recM=+g('rec')||0;spd=+g('sp')||1;
 const cr=(p,q,r,s,u)=>.5*(2*q+(-p+r)*u+(2*p-5*q+4*r-s)*u*u+(-p+3*q-3*r+s)*u*u*u);
 function at(ks,t){let i=0;while(i<ks.length-2&&t>ks[i+1][0])i++;const A=ks[Math.max(0,i-1)],B=ks[i],C=ks[i+1],D=ks[Math.min(ks.length-1,i+2)],u=Math.min(1,Math.max(0,(t-B[0])/((C[0]-B[0])||1)));
 return[1,2,3,4,5,6].map(j=>{const f=j==3?Math.log:x=>x,v=cr(f(A[j]),f(B[j]),f(C[j]),f(D[j]),u);return j==3?Math.exp(v):v})}
-function put(p){const[az,po,di,x,y,z]=p;ctl.target.set(x,y,z);cam.position.set(x+di*Math.sin(po)*Math.sin(az),y+di*Math.cos(po),z+di*Math.sin(po)*Math.cos(az))}
+const FG=a.scene&&a.scene.fog,FG0=FG?[FG.near,FG.far]:0; // مه با ارتفاع دوربین بازتر می‌شود تا از بالا صحنه سفید و مبهم نشود
+function put(p){const[az,po,di,x,y,z]=p;if(FG){FG.near=Math.max(FG0[0],di*.55);FG.far=Math.max(FG0[1],di*2.4)}ctl.target.set(x,y,z);cam.position.set(x+di*Math.sin(po)*Math.sin(az),y+di*Math.cos(po),z+di*Math.sin(po)*Math.cos(az))}
 function relax(){if(!saved)saved={a:ctl.minDistance,b:ctl.maxDistance,c:ctl.minPolarAngle,d:ctl.maxPolarAngle};Object.assign(ctl,{minDistance:3,maxDistance:400,minPolarAngle:.02,maxPolarAngle:1.5})}
 function restore(){if(!saved)return;Object.assign(ctl,{minDistance:saved.a,maxDistance:saved.b,minPolarAngle:saved.c,maxPolarAngle:saved.d});saved=null}
 function inLim(){if(!saved)return 1;const d=cam.position.distanceTo(ctl.target),p=Math.acos((cam.position.y-ctl.target.y)/d);return d>=saved.a&&d<=saved.b&&p>=saved.c&&p<=saved.d}
@@ -35,7 +36,7 @@ const c=a.center(),h=a.hq(),C=[c[0],0,c[1]],H=h?[h.x,1.2,h.z]:C,b=Math.atan2(cam
 relax();ctl.enabled=false;ctl.enableDamping=false;put(at(ks,0));B.style.display='block';
 let rc=0;if(recM){try{await rec.start()}catch(x){}rc=rec.on();if(!rc){fin();return}await sl(900)}
 await play(ks);if(rc){if(!ab)await sl(1300);rec.stop()}fin()}
-function fin(){busy=0;S=null;B.style.display='none';ctl.enabled=true;ctl.enableDamping=true;if(inLim())restore();P.classList.add('on')}
+function fin(){if(FG){FG.near=FG0[0];FG.far=FG0[1]}busy=0;S=null;B.style.display='none';ctl.enabled=true;ctl.enableDamping=true;if(inLim())restore();P.classList.add('on')}
 // ── رابط (پنل پایین صفحه؛ هنگام ضبط روی کامپیوتر پنهان می‌شود)
 const css=document.createElement('style');css.textContent=`#cin{position:fixed;left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom));z-index:40;display:none;max-width:480px;margin:auto;padding:10px;border-radius:14px;background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);color:var(--cream);font:700 12px/1.4 inherit;direction:rtl}
 #cin.on{display:block}#cin h4{margin:0 0 8px;font-size:13px;display:flex;justify-content:space-between}#cin h4 span{cursor:pointer;padding:0 6px}
