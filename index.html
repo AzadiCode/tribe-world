@@ -93,7 +93,7 @@ let PRX=LOW?1:Math.min(devicePixelRatio,2);const R=new THREE.WebGLRenderer({anti
 R.shadowMap.enabled=true;R.shadowMap.type=LOW?THREE.PCFShadowMap:THREE.PCFSoftShadowMap;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=.92;document.body.prepend(R.domElement);
 const scene=new THREE.Scene();scene.fog=new THREE.Fog(0xc9d6c4,48,150);
 const cam=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.5,300);const HOME=new THREE.Vector3(15,20,19);cam.position.set(46,52,56);
-const ctl=new OrbitControls(cam,R.domElement);Object.assign(ctl,{enableDamping:true,maxPolarAngle:1.2,minPolarAngle:.35,minDistance:9,maxDistance:60,screenSpacePanning:false});let CIN=null,RCOMP=null,HUDM=null;
+const ctl=new OrbitControls(cam,R.domElement);Object.assign(ctl,{enableDamping:true,maxPolarAngle:1.2,minPolarAngle:.35,minDistance:9,maxDistance:60,screenSpacePanning:false});let CIN=null,RCOMP=null,HUDM=null,HUDREADY=null;
 const hemi=new THREE.HemisphereLight(0xdfeaff,0x6f8a55,.7);scene.add(hemi);const moon=new THREE.DirectionalLight(0x9fb4ff,0);scene.add(moon);
 const sun=new THREE.DirectionalLight(0xffe2b8,1.9);sun.position.set(-20,30,18);sun.castShadow=true;sun.shadow.mapSize.set(LOW?1024:MOB0?1536:2048,LOW?1024:MOB0?1536:2048);
 Object.assign(sun.shadow.camera,{left:-43,right:43,top:43,bottom:-43,near:5,far:90});sun.shadow.bias=-.0004;sun.shadow.normalBias=.06;scene.add(sun);
@@ -461,55 +461,42 @@ async function apClick(e){const b=e.target.closest('[data-a]');if(!b)return;cons
  if(a==='say')return apAct(()=>api('/api/admin/say','POST',{cid:apV('ci')===''?null:apN('ci'),text:apV('ctx')}),'پیام ارسال شد ✅');
  if(a==='env')return apAct(()=>api('/api/admin/env','POST',{mode:apV('em2'),hour:apN('eh')||12}),'زمان تنظیم شد ✅');
  if(a==='tools'){setAdm(!admOn);$('ap').style.display='none'}}
-// ── ضبط ویدیوی بازی (فقط پنل مدیر): تصویر سه‌بعدی + موسیقی بازی، با کیفیت بالا؛ در پایان فایل کامل ذخیره می‌شود
-const RC={on:0};let rec=null,rch=[],rbytes=0,rt0=0,racc=0,rtick=0,rAud=null,rUrl='';const RCAP=150*1048576,RFPS=30,
+// ── ضبط داخلی: فقط تصویر بازی + HUD؛ بدون نوار مرورگر، اعلان و رابط سیستم‌عامل
+const RC={on:0};let rec=null,rch=[],rbytes=0,rt0=0,racc=0,rtick=0,rAud=null,rUrl='',rDS=null,rVTrack=null,rFrameAt=0,rTargetFps=30;const RCAP=150*1048576,
 RMT=['video/mp4;codecs=avc1.640033,mp4a.40.2','video/mp4;codecs=avc1,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
 document.body.insertAdjacentHTML('beforeend','<div id="rect" class="g">● <span></span></div>');
 const rsec=()=>Math.floor((racc+(rt0?performance.now()-rt0:0))/1000),r2=n=>String(n).padStart(2,'0');
-function recStart(){
-if(!window.MediaRecorder||!R.domElement.captureStream)return toast('این مرورگر از ضبط ویدیو پشتیبانی نمی‌کند');
-const mt=RMT.find(t=>MediaRecorder.isTypeSupported(t));if(!mt)return toast('قالب ویدیو در این مرورگر پشتیبانی نمی‌شود');
-if(rUrl){URL.revokeObjectURL(rUrl);rUrl=''}
-const pr=LOW?1:Math.min(Math.max(devicePixelRatio||1,1.5),2.5),w=Math.floor(innerWidth*pr)&~1,h=Math.floor(innerHeight*pr)&~1; // وضوح بالاتر، ابعاد زوج برای انکودر
-RC.on=1;R.setPixelRatio(1);R.setSize(w,h,false);
-let st,hc=null;try{hc=HUDM&&HUDM.createHudCapture(R.domElement,['#res','#tier','#toast','#quest','#cap','#ev','#nts'])}catch(e){hc=null}
-st=hc?hc.canvas.captureStream(RFPS):R.domElement.captureStream(RFPS);RCOMP=hc?hc.frame:null;const vt=st.getVideoTracks();rAud=null;
-try{const a=window.__tribeAudio&&window.__tribeAudio();if(a&&a.ac&&a.out&&a.ac.state==='running'){const d=a.ac.createMediaStreamDestination();a.out.connect(d);rAud={d,out:a.out};st=new MediaStream([...vt,...d.stream.getAudioTracks()])}}catch(e){rAud=null}
-rgo(st,mt,w,h)}
-let rDS=null;
-function rgo(st,mt,w,h,ui){try{rec=new MediaRecorder(st,{mimeType:mt,videoBitsPerSecond:Math.round(Math.max(8e6,Math.min(12e6,w*h*RFPS*.2))),audioBitsPerSecond:192000})}catch(e){recEnd();return toast('شروع ضبط ممکن نشد')}
-rch=[];rbytes=0;
-rec.ondataavailable=e=>{if(e.data&&e.data.size){rch.push(e.data);rbytes+=e.data.size;if(rbytes>RCAP&&rec&&rec.state!=='inactive'){toast('به سقف حجم رسید؛ ویدیو ذخیره می‌شود');recStop()}}};
-rec.onerror=()=>{toast('خطا در ضبط؛ آنچه ضبط شده ذخیره می‌شود');recStop()};
-rec.onstop=()=>recSave(mt);if(ui)document.body.classList.add('rch');
-rec.start(1000);racc=0;rt0=performance.now();
-(ui?$('brec2'):$('brec')).classList.add('rec');const el=$('rect');el.classList.add('on');el.lastChild.textContent='۰۰:۰۰';
-rtick=setInterval(()=>{const s=rsec();el.lastChild.textContent=fa(r2(s/60|0))+':'+fa(r2(s%60))},500);
-if(!ui)toast('ضبط شروع شد؛ برای پایان دوباره روی 🎥 بزن')}
-async function recStartUI(){if(rec)return;
-if(!window.MediaRecorder||!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia))return toast('ضبط با رابط فقط روی کامپیوتر (کروم/اج) کار می‌کند');
-const mt=RMT.find(t=>MediaRecorder.isTypeSupported(t));if(!mt)return toast('قالب ویدیو در این مرورگر پشتیبانی نمی‌شود');
-try{rDS=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:RFPS,cursor:'never'},audio:false,preferCurrentTab:true,selfBrowserSurface:'include'})}catch(e){rDS=null;return toast('ضبط لغو شد')}
-if(rUrl){URL.revokeObjectURL(rUrl);rUrl=''}
-const vt=rDS.getVideoTracks(),ss=vt[0].getSettings(),w=ss.width||innerWidth,h=ss.height||innerHeight;let st=new MediaStream(vt);rAud=null;
-try{const a=window.__tribeAudio&&window.__tribeAudio();if(a&&a.ac&&a.out&&a.ac.state==='running'){const d=a.ac.createMediaStreamDestination();a.out.connect(d);rAud={d,out:a.out};st=new MediaStream([...vt,...d.stream.getAudioTracks()])}}catch(e){rAud=null}
-vt[0].onended=()=>recStop();rgo(st,mt,w,h,1)}
+async function recStart(cinema=false){
+ if(rec)return;
+ if(HUDREADY)try{await HUDREADY}catch(e){}
+ if(!window.MediaRecorder||!R.domElement.captureStream)return toast('این مرورگر از ضبط ویدیو پشتیبانی نمی‌کند');
+ const mt=RMT.find(t=>MediaRecorder.isTypeSupported(t));if(!mt)return toast('قالب ویدیو در این مرورگر پشتیبانی نمی‌شود');
+ if(rUrl){URL.revokeObjectURL(rUrl);rUrl=''}
+ // ضلع کوتاه 1080px؛ نسبت تصویر واقعی دستگاه حفظ می‌شود.
+ const aspect=innerWidth/Math.max(1,innerHeight),h=aspect>=1?1080:Math.round(1080/aspect),w=aspect>=1?Math.round(1080*aspect):1080;
+ RC.on=1;R.setPixelRatio(1);R.setSize(w,h,false);cam.aspect=aspect;cam.updateProjectionMatrix();
+ let hc=null;try{hc=HUDM&&HUDM.createHudCapture(R.domElement,['#vg','#hud','#side','#adm','#pal','#md','#ap','#ev','#dot','#nts'])}catch(e){hc=null}
+ let stream;try{stream=(hc?hc.canvas:R.domElement).captureStream(0);rVTrack=stream.getVideoTracks()[0];if(!rVTrack||typeof rVTrack.requestFrame!=='function'){stream.getTracks().forEach(t=>t.stop());stream=(hc?hc.canvas:R.domElement).captureStream(30);rVTrack=stream.getVideoTracks()[0]}}
+ catch(e){recEnd();return toast('ساخت خروجی ضبط ممکن نشد')}
+ RCOMP=hc?hc.frame:null;rFrameAt=0;rTargetFps=MOB0?30:(fpsA>=50?60:30);rAud=null;
+ try{const a=window.__tribeAudio&&window.__tribeAudio();if(a&&a.ac&&a.out&&a.ac.state==='running'){const d=a.ac.createMediaStreamDestination();a.out.connect(d);rAud={d,out:a.out};stream=new MediaStream([...stream.getVideoTracks(),...d.stream.getAudioTracks()])}}catch(e){rAud=null}
+ rgo(stream,mt,w,h,cinema);
+}
+function rFrame(){if(!rec||rec.state!=='recording'||!rVTrack)return;if(typeof rVTrack.requestFrame!=='function'){if(RCOMP)RCOMP();return}const now=performance.now();const desired=MOB0?30:(fpsA>=50?60:30);if(desired!==rTargetFps)rTargetFps=desired;const gap=1000/rTargetFps;if(now-rFrameAt>=gap){try{if(RCOMP)RCOMP();rVTrack.requestFrame();rFrameAt=now}catch(e){}}}
+function rgo(st,mt,w,h,cinema){try{rec=new MediaRecorder(st,{mimeType:mt,videoBitsPerSecond:Math.round(Math.max(8e6,Math.min(16e6,w*h*rTargetFps*.12))),audioBitsPerSecond:192000})}catch(e){recEnd();return toast('شروع ضبط ممکن نشد')}
+ rch=[];rbytes=0;rec.ondataavailable=e=>{if(e.data&&e.data.size){rch.push(e.data);rbytes+=e.data.size;if(rbytes>RCAP&&rec&&rec.state!=='inactive'){toast('به سقف حجم رسید؛ ویدیو ذخیره می‌شود');recStop()}}};rec.onerror=()=>{toast('خطا در ضبط؛ آنچه ضبط شده ذخیره می‌شود');recStop()};rec.onstop=()=>recSave(mt);
+ rec.start(1000);racc=0;rt0=performance.now();$('brec').classList.add('rec');$('brec2').classList.add('rec');const el=$('rect');el.classList.add('on');el.lastChild.textContent='۰۰:۰۰';
+ rtick=setInterval(()=>{const s=rsec();el.lastChild.textContent=fa(r2(s/60|0))+':'+fa(r2(s%60))},500);toast(cinema?'ضبط سینمایی شروع شد':'ضبط بازی شروع شد؛ برای پایان دوباره بزن');
+}
 function recStop(){if(rec&&rec.state!=='inactive'){try{if(rec.state==='paused')rec.resume();rec.stop()}catch(e){recSave('')}}}
-function recEnd(){RCOMP=null;clearInterval(rtick);$('brec').classList.remove('rec');$('brec2').classList.remove('rec');document.body.classList.remove('rch');if(rDS){rDS.getTracks().forEach(t=>t.stop());rDS=null}$('rect').classList.remove('on');
-if(rAud){try{rAud.out.disconnect(rAud.d)}catch(e){}rAud=null}
-if(RC.on){RC.on=0;R.setPixelRatio(PRX);R.setSize(innerWidth,innerHeight);onRes()}}
-function recSave(mt){recEnd();const parts=rch;rch=[];rec=null;if(!parts.length)return toast('چیزی ضبط نشد');
-const type=(mt||'video/webm').split(';')[0],blob=new Blob(parts,{type}),d=new Date(),n='tribe-world-'+d.getFullYear()+r2(d.getMonth()+1)+r2(d.getDate())+'-'+r2(d.getHours())+r2(d.getMinutes())+r2(d.getSeconds())+(type.includes('mp4')?'.mp4':'.webm');
-rUrl=URL.createObjectURL(blob);const a=document.createElement('a');a.href=rUrl;a.download=n;document.body.appendChild(a);a.click();a.remove();
-toast('✅ ویدیو ذخیره شد · '+fa(blob.size/1048576,0)+' مگابایت')}
-document.addEventListener('visibilitychange',()=>{if(!rec||rec.state==='inactive')return; // وقتی صفحه پنهان شد، ضبط مکث می‌کند تا فریم‌های یخ‌زده ذخیره نشود
-if(document.hidden){if(rec.state==='recording'){rec.pause();racc+=performance.now()-rt0;rt0=0}}else if(rec.state==='paused'){rec.resume();rt0=performance.now()}});
+function recEnd(){RCOMP=null;rVTrack=null;clearInterval(rtick);$('brec').classList.remove('rec');$('brec2').classList.remove('rec');document.body.classList.remove('rch');$('rect').classList.remove('on');if(rDS){rDS.getTracks().forEach(t=>t.stop());rDS=null}if(rAud){try{rAud.out.disconnect(rAud.d)}catch(e){}rAud=null}if(RC.on){RC.on=0;R.setPixelRatio(PRX);R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();onRes()}}
+function recSave(mt){recEnd();const parts=rch;rch=[];rec=null;if(!parts.length)return toast('چیزی ضبط نشد');const type=(mt||'video/webm').split(';')[0],blob=new Blob(parts,{type}),d=new Date(),n='tribe-world-'+d.getFullYear()+r2(d.getMonth()+1)+r2(d.getDate())+'-'+r2(d.getHours())+r2(d.getMinutes())+r2(d.getSeconds())+(type.includes('mp4')?'.mp4':'.webm');rUrl=URL.createObjectURL(blob);const a=document.createElement('a');a.href=rUrl;a.download=n;document.body.appendChild(a);a.click();a.remove();toast('✅ ویدیو ذخیره شد · '+fa(blob.size/1048576,0)+' مگابایت')}
 addEventListener('beforeunload',e=>{if(rec&&rec.state!=='inactive'){e.preventDefault();e.returnValue=''}});
-$('brec').onclick=()=>RC.on?recStop():recStart();
-$('brec2').onclick=()=>CIN?CIN.toggle():(rec?recStop():recStartUI());
-import('/hudcap.js').then(m=>HUDM=m).catch(e=>console.warn('hudcap',e));
-import('/cinema.js').then(m=>{CIN=m.initCinema({cam,ctl,toast,low:LOW,center:()=>ctr,radius:()=>RAD,hq:()=>hqH,rec:{start:()=>(MOB0||!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia))?recStart():recStartUI(),stop:recStop,on:()=>!!rec}})}).catch(e=>console.warn('cinema',e));
-addEventListener('keydown',e=>{if(e.key==='F8'){e.preventDefault();rec?recStop():recStartUI()}});
+$('brec').onclick=()=>rec?recStop():recStart();
+$('brec2').onclick=()=>CIN?CIN.toggle():(rec?recStop():recStart());
+HUDREADY=import('/hudcap.js').then(m=>HUDM=m).catch(e=>{console.warn('hudcap',e);return null});
+import('/cinema.js').then(m=>{CIN=m.initCinema({cam,ctl,toast,low:LOW,center:()=>ctr,radius:()=>RAD,hq:()=>hqH,rec:{start:()=>recStart(true),stop:recStop,on:()=>!!rec}})}).catch(e=>console.warn('cinema',e));
+addEventListener('keydown',e=>{if(e.key==='F8'){e.preventDefault();rec?recStop():recStart()}});
 // ── ظاهر بنیان‌گذار: هکر نئونی (پالتوی تاریک، گاگل، چشم سبز، دورخط درخشان)
 let fL=null;
 function founderLook(c){const g=c.g,SU=M(0x1b2540,.65),WS=M(0xf4f1ea,.6),TI=M(0x2fd67a,.5),GO=M(0xd9b45a,.3),BK=new THREE.MeshStandardMaterial({color:0x10141c,roughness:.2,metalness:.25});
@@ -849,6 +836,6 @@ for(const g of objs.values())if(g.userData.sw!==undefined)g.rotation.z=Math.sin(
 for(const g of objs.values()){const u=g.userData;if(u.t<1){u.t=Math.min(1,u.t+dt*1.8);const e=1-Math.pow(1-u.t,3);g.scale.setScalar(Math.max(.01,e*(1+.12*Math.sin(u.t*Math.PI))))}}
 if(!document.hidden){fpsA+=(Math.min(120,1/Math.max(dt,.001))-fpsA)*.05;if((warm-=dt)<=0&&(fpsT-=dt)<=0){fpsT=1.5;tune()}}
 stepCits(dt,t);stepCars(dt,t);
-if(CIN)CIN.step(dt);ctl.target.x=Math.max(-34,Math.min(34,ctl.target.x));ctl.target.z=Math.max(-34,Math.min(34,ctl.target.z));ctl.update();if(INST){try{fillInst(dt)}catch(e){console.error(e);killInst()}}R.render(scene,cam);if(RCOMP)RCOMP()});
+if(CIN)CIN.step(dt);ctl.target.x=Math.max(-34,Math.min(34,ctl.target.x));ctl.target.z=Math.max(-34,Math.min(34,ctl.target.z));ctl.update();if(INST){try{fillInst(dt)}catch(e){console.error(e);killInst()}}R.render(scene,cam);rFrame()});
 </script>
 </body></html>
