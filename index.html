@@ -150,6 +150,7 @@ market(g){bx(g,2,.06,1.4,0xb9ae96);for(let i=-1;i<=1;i++){const x=i*.66;bx(g,.55
 bx(g,.32,.06,.6,AWN[i+1],x-.16,.62);bx(g,.32,.06,.6,0xf2ead6,x+.16,.62);[-.26,.26].forEach(a=>[-.22,.22].forEach(c=>bx(g,.04,.56,.04,0x6b4a2b,x+a,.06,c)));
 for(let j=-1;j<=1;j++)ball(g,.07,[0xd94f3a,0xf0b13a,0x7cb342][(i+j+3)%3],x+j*.14,.53,0,0)}},
 road(g){roadMesh(g,0,0)},
+path(g,b){pathMesh(g,0,b.id)},
 hq(g){
 const ST=M(0xcfc9ba,.95),WL=M(0xe9e3d4,.85),DK=M(0x2c323a,.55),WD=M(0x8a5a35,.7),RF=M(0xf3efe6,.6),LW=M(0x7fa46a,1),PL=M(0x2f7a4a,.9),GO=M(0xd9b45a,.35),PT=M(0xe9e2cf,.95);
 hb(g,1.9,.08,1.84,ST,0,0,.05);hb(g,1.76,.02,1.7,LW,0,.08,.05);
@@ -181,25 +182,141 @@ else[[0,1.05,0,.62],[.25,.85,.1,.42],[-.22,.9,-.1,.4]].forEach(([a,y,c,r],i)=>ba
 const objs=new Map();let W=null;
 // ═══ ارتقا: محیط زنده، جاده‌ها، نام‌ها، حباب‌ها، ابزار مدیر ═══
 let HARD=140;const MOB=innerWidth<820||matchMedia('(pointer:coarse)').matches;let POP=0,VIS=MOB?40:70,PB=0,fpsA=60,fpsT=0,fpsUp=0,VCAP=1e9,vcT=0,warm=6;
-let mode='',bt='house',admOn=0,namesOn=0,lastChat=-1,T=localStorage.tk||'',drag=null,dn=null,painted=new Set(),NT=0,eh=-1,hT=0,H=12,clkTxt='',tk=4;
+let mode='',bt='house',admOn=0,namesOn=0,lastChat=-1,T=localStorage.tk||'',drag=null,dn=null,painted=new Set(),NT=0,eh=-1,hT=0,H=12,clkTxt='',tk=9;
 const QH=new URLSearchParams(location.search).get('h'),turbs=[],pickR=a=>a[Math.random()*a.length|0],cpx=n=>String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]),noEm=t=>String(t).replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\uFE0F]/gu,'').trim();
-const TD=['مشغول کشاورزی‌ام','هوا عالیه','خونه‌م قشنگه','چه روز قشنگیه!','گرسنمه...','چه آهنگ قشنگی','کاش بازار بزرگ‌تر بشه','داره شهر می‌شه!'],TN=['خوابم میاد','شب قشنگیه','ستاره‌ها رو ببین','کاش چراغ بیشتر بود','شب بخیر','کنار آتیش خوبه'];
+// ═══ گفتگوی هوشمند: کم، متنوع، و وابسته به ساعت / مکان / وضعیت قبیله ═══
+const DG={r:{},cv:[],gG:0,gC:0,ev:0},dgNow=()=>performance.now()/1000;
+const DL={
+any:['هوا عالیه','چه روز قشنگیه!','اینجا آروم و قشنگه','یه چای می‌چسبه','همه‌چی خوب پیش می‌ره','چه قبیلهٔ خوبی داریم','کاش یه کم استراحت کنم','دلم یه قدم زدن می‌خواد'],
+small:['هنوز کوچیکیم، ولی رشد می‌کنیم','کاش جمعیت بیشتر بشه','هر روز یه آشنای تازه!'],
+mid:['روزبه‌روز شلوغ‌تر می‌شیم','داره شبیه روستا می‌شه'],
+big:['چقدر شلوغ شده!','دیگه همه رو نمی‌شناسم!','شهر شده برای خودش'],
+dawn:['چه سپیده‌دم قشنگی','هنوز هوا خنکه','نسیم صبح چه خوبه'],
+morning:['امروز کلی کار دارم','صبح که می‌شه انرژی دارم','چه صبح خوبی'],
+noon:['چه آفتابی!','وقت ناهاره','کاش یه سایه پیدا کنم'],
+afternoon:['عصر قشنگیه','یه کم خسته شدم','روز خوبی بود'],
+evening:['غروب چه رنگی داره','داره شب می‌شه','بوی شام میاد'],
+night:['خوابم میاد','شب قشنگیه','ستاره‌ها رو ببین','کاش چراغ بیشتر بود'],
+farm:['محصول امسال خوبه','خاک امروز نرمه','کاش بارون بیاد','سبزی‌ها دارن بزرگ می‌شن'],
+market:['بازار امروز شلوغه','همه‌چی تازه‌ست','کاش بازار بزرگ‌تر بشه','قیمت‌ها بد نیست'],
+home:['خونه‌م قشنگه','خونه بهترین جاست','کاش یه باغچه هم داشتم'],
+pond:['آب برکه چه آرومه','صدای آب آرامش می‌ده','ماهی هم داره؟'],
+tree:['زیر درخت خنکه','چه درخت بلندی','برگ‌ها چه قشنگ تکون می‌خورن'],
+path:['پیاده‌روی خوبه','این مسیر خاکی دلنشینه','قدم زدن حال می‌ده'],
+road:['ماشین میاد، مواظب باشم','باید زود از خیابون رد شم','خیابون شلوغه...'],
+hungry:['غذا داره کم می‌شه...','کاش مزرعهٔ بیشتری داشتیم','گرسنمه...'],
+plenty:['انبار پره، خیالم راحته','امسال غذا کم نیست'],
+crowd:['اینجا شلوغه','برم یه جای خلوت'],
+alone:['چه آرومه...','خلوت قشنگیه'],
+morning_farm:['صبح زود مزرعه بهترینه','شبنم هنوز روی برگ‌هاست'],
+morning_market:['بازار تازه باز شده'],
+noon_tree:['ظهر زیر درخت می‌چسبه'],
+evening_pond:['غروب برکه طلاییه'],
+night_path:['شب‌ها پیاده‌رو آرومه'],
+night_home:['خونه شب‌ها گرمه'],
+night_road:['شب با ماشین‌ها باید مواظب بود'],
+gt:['سلام!','خوبی؟','سلام {n}!','چه خبر؟','ببخشید!','راه باز!'],
+gt_dawn:['صبح بخیر!','چه صبح زودی!'],gt_morning:['صبح بخیر!','صبح بخیر {n}!'],gt_noon:['خسته نباشی!','چه گرمه!'],
+gt_afternoon:['عصر بخیر!'],gt_evening:['عصر بخیر {n}!','داره شب می‌شه‌ها'],gt_night:['شب بخیر!','این وقت شب؟!'],
+gr:['سلام!','مرسی، تو خوبی؟','خوبم!','هاها، سلام','سلام {n}!','قربونت'],
+shop:['ممنون!','تازه‌ست','عالیه!','یکی از اینا لطفاً','قیمتش خوبه'],
+farmw:['یه کم دیگه کار مونده','خاک امروز نرمه','کار مزرعه سخته ولی می‌چسبه'],
+sitl:['چه آرامشی','اینجا خنکه','چه نسیمی'],
+viewl:['چه منظره‌ای!','برکه چه قشنگه'],
+own:['اینجا خونهٔ منه!','خونه‌م همینه','بفرمایید تو!'],
+ownq:['دفتر منه','اینجا دفتر کاره'],
+tap:['سلام!','خوش اومدی','من اینجام!','خوبی؟','به‌به!'],
+tap_morning:['صبح بخیر!'],tap_dawn:['صبح بخیر!'],tap_noon:['خسته نباشی!'],tap_evening:['عصر بخیر!'],tap_night:['شب بخیر!','این وقت شب؟!'],
+tap_farm:['دارم کار می‌کنم!'],tap_market:['بفرما، بازار اینجاست!'],tap_pond:['برکه رو دیدی؟'],
+ev_build:['یه ساختمون جدید!','داره قشنگ‌تر می‌شه','چه کار خوبی'],
+ev_house:['خونهٔ جدید! کاش مال من بود','جای بیشتر برای همه'],
+ev_farm:['مزرعهٔ جدید یعنی غذای بیشتر!','عجب! مزرعه ساختن'],
+ev_market:['بازار جدید! عالیه','حالا خرید راحت‌تره'],
+ev_road:['جاده؟ ماشین هم میاد!','جاده‌ها شهر رو زنده می‌کنن'],
+ev_path:['پیاده‌رو! دیگه از وسط خیابون نمی‌ریم','قدم زدن راحت‌تر شد'],
+ev_join:['خوش اومدید!','یه عضو جدید!','قبیله داره بزرگ‌تر می‌شه'],
+ev_goal:['به هدف رسیدیم!','هورا!']
+};
+const DC=[
+{t:['any'],l:['{n}، چه خبر؟','هیچی، آروم و قشنگ.','خوش به حالت!']},
+{t:['any'],l:['شنیدی قبیله داره بزرگ می‌شه؟','آره، ساختمون‌های تازه ساختن','کاش ما هم خونهٔ بزرگ‌تری داشتیم']},
+{t:['any'],l:['امروز کار زیاد داری؟','نه خیلی، تو چی؟','منم یه کم. بعداً بیا یه چای بخوریم']},
+{t:['farm','morning'],l:['محصول چطوره؟','شکر خدا، امسال خوبه','پس انبار پر می‌شه!']},
+{t:['market'],l:['امروز چی خریدی؟','فقط یه کم میوه، تازه‌ست','پس منم برم یه سر بزنم']},
+{t:['hungry'],l:['غذا داره کم می‌شه...','آره، باید مزرعهٔ بیشتری بسازیم','امیدوارم زودتر درست بشه']},
+{t:['plenty'],l:['انبار پره!','آره، امسال غذا کم نیست','خدا رو شکر']},
+{t:['evening','night'],l:['دیر وقته، نمی‌خوای بخوابی؟','چرا، همین الان می‌رم','شب بخیر {n}!']},
+{t:['dawn','morning'],l:['صبح بخیر! امروز چه برنامه‌ای داری؟','می‌رم مزرعه، تو چی؟','منم میام یه کم کمکت کنم']},
+{t:['noon'],l:['چقدر گرمه!','بیا بریم زیر سایه','آره، یه کم استراحت کنیم']},
+{t:['pond'],l:['برکه امروز چه آرومه','آره، دلم می‌خواد کنارش بشینم','بیا بریم']},
+{t:['path'],l:['این پیاده‌رو خاکی خوبه','آره، دیگه لازم نیست از خیابون رد شیم','راحت‌تر شده']},
+{t:['road'],l:['مواظب ماشین‌ها باش','آره، یه لحظه صبر کن رد بشن','بفرما، رد شو']},
+{t:['crowd'],l:['چقدر شلوغه!','آره، بریم یه جای خلوت‌تر','موافقم']},
+{t:['mid','big'],l:['یادته اولش چند نفر بودیم؟','آره، خیلی کم بودیم','حالا ببین!']},
+{t:['small'],l:['خوبه که هنوز همه همدیگه رو می‌شناسیم','آره، مثل یه خانواده‌ایم','امیدوارم همیشه همین‌طور بمونه']},
+{t:['tree'],l:['اینجا چه خنکه','آره، سایهٔ درخت عالیه','بشینیم یه کم؟']},
+{t:['evening'],l:['غروب چه قشنگه','آره، آسمون طلایی شده','کاش همیشه همین‌طور بود']},
+{t:['home'],l:['خونه‌ت چطوره؟','خوبه، فقط کاش بزرگ‌تر بود','یه روز بزرگش می‌کنیم']}
+];
+function dgSlot(){return H<5?'night':H<7.5?'dawn':H<11.5?'morning':H<14.5?'noon':H<17.5?'afternoon':H<20?'evening':'night'}
+function dgZone(c){const x=c.g.position.x,z=c.g.position.z,D=(a,b)=>Math.hypot(a-x,b-z);
+if(farms.some(f=>D(f.x,f.z)<2.4))return'farm';if(mkts.some(m=>D(m.cx,m.cz)<3))return'market';if(homes.some(h=>D(h.x,h.z)<2.3))return'home';
+if(((x+17)/11.5)**2+((z+17)/8.5)**2<1)return'pond';const k=Math.round(x/CELL)+','+Math.round(z/CELL);if(pathSet.has(k))return'path';if(roadSet.has(k))return'road';
+if(treeSp.some(s=>D(s.x,s.z)<1.2))return'tree';return'open'}
+function dgTags(c){const s=(W&&W.stats)||{},pop=s.pop||1,fd=s.food||0,sl=dgSlot(),z=dgZone(c),n=crowd(c.g.position.x,c.g.position.z),t=['any',sl,z,sl+'_'+z,pop<30?'small':pop<150?'mid':'big'];
+t.push(n>=4?'crowd':n<=1?'alone':'any');if(fd<pop*.5)t.push('hungry');else if(fd>pop*6)t.push('plenty');return t}
+function dgLine(tags,c,ring='a'){const R=DG.r[ring]||(DG.r[ring]=[]),mx=ring==='a'?20:ring==='g'?4:3,pool=[];
+for(const t of tags){const a=DL[t];if(!a)continue;const ok=a.filter(s=>!R.includes(s)&&s!==c.ll);if(!ok.length)continue;const w=(t==='any'?2:t.includes('_')?5:3)/ok.length;for(const s of ok)pool.push([w,s])}
+if(!pool.length)return null;const s=pk(pool)[1];R.push(s);if(R.length>mx)R.shift();c.ll=s;return s}
+function dgSay(c,tags,ms=3200,ring='a'){const s=dgLine(tags,c,ring);if(!s)return;bubble(c,s,ms);c.ls=dgNow()}
+const dgVis=c=>{tv.copy(c.g.position);tv.project(cam);return tv.z<1&&Math.abs(tv.x)<1.05&&Math.abs(tv.y)<1.05&&cam.position.distanceTo(c.g.position)<60};
+// حرف زدن خودبه‌خودی: کم، فقط از بین آدم‌هایی که دیده می‌شوند، با ترجیح جاهای جالب (مزرعه، بازار، برکه...)
+function dgAmb(){if(document.hidden)return;let on=0;for(const c of cits)if(c.el.querySelector('.bb'))on++;if(on>=2||Math.random()<.35)return;
+const now=dgNow(),WT={farm:3,market:3,pond:2.5,tree:2.5,path:1.6,home:1.4,road:1.2},pool=[];
+for(const c of cits){if(c.hid||c.act==='chat'||c.st==='enter'||c.st==='exit'||c.st==='greet'||c.el.querySelector('.bb')||now-(c.ls||0)<50||!dgVis(c))continue;pool.push([WT[dgZone(c)]||.8,c])}
+if(!pool.length)return;const c=pk(pool)[1];dgSay(c,dgTags(c),3400)}
+// گفتگوی دو نفره: ۳ جملهٔ مرتبط با موقعیت، نه حرف بی‌پایان
+function dgConv(c,p){const tg=dgTags(c),pz=dgZone(p);if(!tg.includes(pz))tg.push(pz);const pool=[];
+DC.forEach((s,i)=>{if(DG.cv.includes(i))return;let w=0;for(const t of s.t)if(tg.includes(t))w=Math.max(w,t==='any'?1:3);if(w)pool.push([w,i])});
+if(!pool.length)return 0;const i=pk(pool)[1];DG.cv.push(i);if(DG.cv.length>6)DG.cv.shift();c.cv={i:0,L:DC[i].l,t:.7+Math.random()*.6};DG.gC=dgNow();return 1}
+function dgTurn(c,p){const v=c.cv,s=v.i%2?p:c,l=v.i%2?c:p;if(!s.hid){bubble(s,v.L[v.i].split('{n}').join(nameOf(l.i)),2900);s.talk=2.2}v.i++;
+if(v.i>=v.L.length){c.cv=null;const e=2.6+Math.random()*2.4;c.tm=Math.min(c.tm,e);p.tm=Math.min(p.tm,e)}else v.t=3+Math.random()*1.3}
+// سلام‌وعلیک: بیشتر بی‌صدا (فقط دست تکان دادن)، و وقتی حرف می‌زنند مطابق ساعت روز
+function dgGreet(a,b){const n=dgNow();if(n-DG.gG<7||Math.random()<.4)return;DG.gG=n;const t=dgLine(['gt','gt_'+dgSlot()],a,'g');if(t)bubble(a,t.split('{n}').join(nameOf(b.i)),1800);
+if(Math.random()<.55)setTimeout(()=>{if(b.hid)return;const r=dgLine(['gr'],b,'g');if(r)bubble(b,r.split('{n}').join(nameOf(a.i)),1700)},500+Math.random()*400)}
+function dgTap(c){return dgLine(['tap','tap_'+dgSlot(),'tap_'+dgZone(c)],c,'t')||'سلام!'}
+// واکنش به اتفاق‌های قبیله (ساخت‌وساز، عضو جدید، رسیدن به هدف)
+function dgEvent(t){const n=dgNow();if(n-DG.ev<25)return;
+const k=t.includes('ساخته شد')?(t.includes('پیاده‌رو')?'ev_path':t.includes('جاده')?'ev_road':t.includes('خانه')?'ev_house':t.includes('مزرعه')?'ev_farm':t.includes('بازار')?'ev_market':'ev_build'):t.includes('پیوست')?'ev_join':t.includes('رسیدیم')?'ev_goal':'';if(!k)return;DG.ev=n;
+let v=cits.filter(c=>!c.hid&&dgVis(c));if(!v.length)v=cits.filter(c=>!c.hid);v.sort(()=>Math.random()-.5).slice(0,Math.random()<.5?2:1).forEach((c,i)=>setTimeout(()=>{if(!c.hid)dgSay(c,[k],3600,'e')},1200+i*1400+Math.random()*900))}
 const DEF=['آرش','سارا','نیما','مینا','کیان','لیلا','پارسا','نگار','بهروز','ندا','سامان','هستی','امیر','مهسا','کاوه','الناز','رضا','پگاه','یاشار','آیدا','داریوش','شقایق','بابک','سیمین'];
-const MODES={move:'✋ جابه‌جایی: ساختمان را بکش و رها کن',build:'🏗️ ساخت: روی زمین بزن (جاده: بکش)',rot:'🔄 چرخش: روی ساختمان بزن',del:'🗑️ حذف: روی ساختمان بزن',name:'🏷️ نام مستعار: روی آدم بزن',say:'💬 پیام: روی آدم بزن'};
+const MODES={move:'✋ جابه‌جایی: ساختمان را بکش و رها کن',build:'🏗️ ساخت: روی زمین بزن (جاده و پیاده‌رو: بکش)',rot:'🔄 چرخش: روی ساختمان بزن',del:'🗑️ حذف: روی ساختمان بزن',name:'🏷️ نام مستعار: روی آدم بزن',say:'💬 پیام: روی آدم بزن'};
 // ── رابط
 document.body.insertAdjacentHTML('afterbegin','<div id="nts"></div>');
-document.body.insertAdjacentHTML('beforeend',`<div id="adm"><div class="btn e g" data-m="move" title="جابه‌جایی">✋</div><div class="btn e g" data-m="build" title="ساخت">🏗️</div><div class="btn e g" data-m="rot" title="چرخش">🔄</div><div class="btn e g" data-m="del" title="حذف">🗑️</div><div class="btn e g" data-m="name" title="نام مستعار">🏷️</div><div class="btn e g" data-m="say" title="پیام">💬</div><div class="btn e g" id="brec" title="ضبط ویدیو">🎥</div><div class="btn e g" id="btm" title="زمان">⏱️</div></div><div id="pal" class="g"><span data-t="house" class="on">🏠</span><span data-t="hq">🏢</span><span data-t="farm">🌾</span><span data-t="market">🏪</span><span data-t="road">🛣️</span><span data-t="tree">🌲</span><label><input type="checkbox" id="fr" checked> رایگان</label></div><div id="md" class="g"><p id="mt"></p><input id="mi" maxlength="120"><div><button id="mok">تأیید</button><button id="mno">انصراف</button></div></div>`);
+document.body.insertAdjacentHTML('beforeend',`<div id="adm"><div class="btn e g" data-m="move" title="جابه‌جایی">✋</div><div class="btn e g" data-m="build" title="ساخت">🏗️</div><div class="btn e g" data-m="rot" title="چرخش">🔄</div><div class="btn e g" data-m="del" title="حذف">🗑️</div><div class="btn e g" data-m="name" title="نام مستعار">🏷️</div><div class="btn e g" data-m="say" title="پیام">💬</div><div class="btn e g" id="brec" title="ضبط ویدیو">🎥</div><div class="btn e g" id="btm" title="زمان">⏱️</div></div><div id="pal" class="g"><span data-t="house" class="on">🏠</span><span data-t="hq">🏢</span><span data-t="farm">🌾</span><span data-t="market">🏪</span><span data-t="road">🛣️</span><span data-t="path" title="پیاده‌رو">🚶</span><span data-t="tree">🌲</span><label><input type="checkbox" id="fr" checked> رایگان</label></div><div id="md" class="g"><p id="mt"></p><input id="mi" maxlength="120"><div><button id="mok">تأیید</button><button id="mno">انصراف</button></div></div>`);
 $('side').insertAdjacentHTML('beforeend','<div id="bn" class="btn g" title="نمایش/پنهان نام‌ها"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.9 3.1-6.2 7-6.2s7 2.3 7 6.2"/></svg></div><div id="bm" class="btn g" title="قطع صدا"></div><div id="ba" class="btn g" title="ابزار مدیر"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg></div>');
 $('tier').insertAdjacentHTML('beforeend','<span id="clk"></span>');
 // ── جاده‌های متصل + چراغ خیابان
 const LAMP=new THREE.MeshStandardMaterial({color:0xfff1c0,emissive:0xffd98a,emissiveIntensity:.1}),LP=new THREE.MeshBasicMaterial({map:GRADT,color:0xffc873,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending}),LPG=new THREE.PlaneGeometry(4.6,4.6),ASP=0x4a4d52;
-function roadMesh(g,m,lamp){[...g.children].forEach(c=>g.remove(c));
+function roadMesh(g,m,lamp,cr=0){[...g.children].forEach(c=>g.remove(c));
 const q=(w,d,x,z,c,h=.08)=>{const e=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c,.95));e.position.set(x,h/2,z);e.receiveShadow=true;g.add(e)};
 q(2,2,0,0,0xb9b3a4,.06);q(1.3,1.3,0,0,ASP);
 [[1,0,-.825,1.3,.35],[2,.825,0,.35,1.3],[4,0,.825,1.3,.35],[8,-.825,0,.35,1.3]].forEach(([bit,x,z,w,d])=>{if(m&bit){q(w,d,x,z,ASP);q(bit&5?.06:.3,bit&5?.3:.06,x*.9,z*.9,0xf1e7b8,.09)}});
+if(cr){const zb=(w,d,x,z)=>q(w,d,x,z,0xefe9d6,.095);for(let i=-2;i<=2;i++){if(cr&1)zb(.09,1,i*.2,0);if(cr&2)zb(1,.09,0,i*.2)}}
 if(lamp){const p=new THREE.Mesh(new THREE.CylinderGeometry(.025,.035,1.1,5),M(0x2f3338));p.position.set(.82,.55,.82);p.castShadow=true;g.add(p);const bl=new THREE.Mesh(new THREE.SphereGeometry(.09,8,6),LAMP);bl.position.set(.82,1.12,.82);g.add(bl);const pl=NORAY(new THREE.Mesh(LPG,LP));pl.rotation.x=-Math.PI/2;pl.position.set(.55,.12,.55);g.add(pl);const hl=NORAY(new THREE.Sprite(LHALO));hl.scale.set(1,1,1);hl.position.set(.82,1.12,.82);g.add(hl)}}
-function roads(w){const rs=new Set(w.buildings.filter(b=>b.type==='road').map(b=>b.x+','+b.z));
-for(const b of w.buildings)if(b.type==='road'){const g=objs.get(b.id);if(!g)continue;const m=(rs.has(b.x+','+(b.z-1))?1:0)|(rs.has((b.x+1)+','+b.z)?2:0)|(rs.has(b.x+','+(b.z+1))?4:0)|(rs.has((b.x-1)+','+b.z)?8:0),l=((b.x+b.z)%2+2)%2===0?1:0,k=m+l*16;if(g.userData.k!==k){g.userData.k=k;roadMesh(g,m,l)}}}
+// ── پیاده‌رو: نیمِ عرض خیابان، ساده و خاکی (عرض ۱ در برابر ۲ خانهٔ جاده)
+const PBG=new THREE.IcosahedronGeometry(.035,0),DIRT=[0xb09366,0xa88b5f,0xb89d70],DKP=[0x96794f,0x8a6f48],PBC=[0x8f8a80,0x7d786e,0xa39d90];
+function pathMesh(g,m,id){[...g.children].forEach(c=>g.remove(c));const H0=.03,hw=PW/2,ln=1-hw,q=(w,d,x,z,c,h=H0)=>{const e=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c,1));e.position.set(x,h/2,z);e.receiveShadow=true;g.add(e)},base=DIRT[((id%3)+3)%3];
+q(PW,PW,0,0,base);
+[[1,0,-1,PW,ln],[2,1,0,ln,PW],[4,0,1,PW,ln],[8,-1,0,ln,PW]].forEach(([bit,dx,dz,w,d])=>{if(m&bit)q(w,d,dx*(hw+ln/2),dz*(hw+ln/2),base)});
+let sd=(id*9301+49297)%233280;const r=()=>(sd=(sd*9301+49297)%233280)/233280;
+for(let i=0;i<3;i++)q(.2+r()*.26,.16+r()*.22,(r()-.5)*.4,(r()-.5)*.4,DKP[i&1],H0+.005);
+for(let i=0;i<4;i++){const e=new THREE.Mesh(PBG,M(PBC[i%3],1));e.position.set((r()-.5)*.8,H0+.008,(r()-.5)*.8);e.scale.set(1,.55,1);e.rotation.y=r()*3;g.add(e)}}
+function roads(w){const rs=new Set(),ps=new Set();for(const b of w.buildings){if(b.type==='road')rs.add(b.x+','+b.z);else if(b.type==='path')ps.add(b.x+','+b.z)}
+const hr=(x,z)=>rs.has(x+','+z),hq=(x,z)=>ps.has(x+','+z),hc=(x,z)=>hr(x,z)||hq(x,z);
+for(const b of w.buildings){if(b.type!=='road'&&b.type!=='path')continue;const g=objs.get(b.id);if(!g)continue;
+if(b.type==='road'){const m=(hr(b.x,b.z-1)?1:0)|(hr(b.x+1,b.z)?2:0)|(hr(b.x,b.z+1)?4:0)|(hr(b.x-1,b.z)?8:0),l=((b.x+b.z)%2+2)%2===0?1:0,cr=(hq(b.x,b.z-1)&&hq(b.x,b.z+1)?1:0)|(hq(b.x+1,b.z)&&hq(b.x-1,b.z)?2:0),k=m+l*16+cr*32;if(g.userData.k!==k){g.userData.k=k;roadMesh(g,m,l,cr)}}
+else{const m=(hc(b.x,b.z-1)?1:0)|(hc(b.x+1,b.z)?2:0)|(hc(b.x,b.z+1)?4:0)|(hc(b.x-1,b.z)?8:0),k=100+m;if(g.userData.k!==k){g.userData.k=k;pathMesh(g,m,b.id)}}}}
 // ── آسمان زنده: ستاره، ماه، توربین بادی
 const KF=[[0,0x0e1a48,0x2f4b8c,0xaec4ff,0,.95,1.12],[5,0x14236a,0x3e5aa0,0xaec4ff,0,.95,1.1],[6.2,0x3a5a9a,0xf2a77a,0xffa066,1,.6,.95],[8,0x5f93cc,0xd5e0d0,0xffe2b8,1.7,.65,.92],[12,0x4f8fd0,0xc9dcd0,0xfff2dc,2.1,.8,.95],[16.5,0x5a8fc8,0xd9d6bf,0xffe0b0,1.8,.7,.93],[18.3,0x4a5a9a,0xf08a5a,0xff7f3f,1.1,.6,.95],[19.5,0x1c2d72,0x6a5a92,0xaec4ff,0,.95,1.08],[24,0x0e1a48,0x2f4b8c,0xaec4ff,0,.95,1.12]],_b=new THREE.Color(),cloudC=new THREE.Color(),cloudN=new THREE.Color(0x7380b0);
 const stars=new THREE.Points((()=>{const g=new THREE.BufferGeometry(),p=[];for(let i=0;i<450;i++){const a=rnd()*6.283,e=.08+rnd()*1.2,r=235;p.push(Math.cos(a)*Math.cos(e)*r,Math.sin(e)*r,Math.sin(a)*Math.cos(e)*r)}g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));return g})(),new THREE.PointsMaterial({size:2.2,sizeAttenuation:false,color:0xffffff,transparent:true,opacity:0,depthWrite:false,fog:false}));scene.add(stars);
@@ -224,7 +341,7 @@ const tv=new THREE.Vector3();
 const nameOf=i=>(W&&W.citizens&&W.citizens[i]&&W.citizens[i].name)||(i===0?'بنیان‌گذار':DEF[(i-1)%DEF.length]+(i>DEF.length?' '+fa(Math.ceil(i/DEF.length)):''));
 function names(){cits.forEach(c=>c.nb.textContent=nameOf(c.i))}
 function bubble(c,text,ms=5000,big){const o=c.el.querySelector('.bb');if(o)o.remove();const b=document.createElement('div');b.className='bb'+(big?' ms':'');b.textContent=text;c.el.prepend(b);clearTimeout(c.bt);c.bt=setTimeout(()=>{b.style.opacity=0;setTimeout(()=>b.remove(),450)},ms)}
-function react(c){if(c.hid)return;c.rx=1.2;c.path=[];c.act='';c.st='stay';c.tm=2.6;c.fa=null;c.pt=null;c.ty=null;c.lk=3;const g=c.g;g.rotation.y=Math.atan2(cam.position.x-g.position.x,cam.position.z-g.position.z);bubble(c,pickR(['سلام!','خوش اومدی','من اینجام!','خوبی؟','به به!']),2600)}
+function react(c){if(c.hid)return;c.rx=1.2;c.path=[];c.act='';c.st='stay';c.tm=2.6;c.fa=null;c.pt=null;c.cv=null;c.ty=null;c.lk=3;const g=c.g;g.rotation.y=Math.atan2(cam.position.x-g.position.x,cam.position.z-g.position.z);bubble(c,dgTap(c),2600)}
 function chatSync(w){if(!w.chat)return;const mx=w.chat.reduce((a,m)=>Math.max(a,m.id),0);if(lastChat<0)lastChat=mx;else for(const m of w.chat)if(m.id>lastChat){const c=cits[m.cid>=0&&m.cid<cits.length?m.cid:Math.random()*cits.length|0];if(c)bubble(c,m.text,7000,1)}lastChat=Math.max(lastChat,mx)}
 const TGM=MOB?22:40,TGA=new Float32Array(720),TGB=new Float32Array(720);
 function tags(){const hw=innerWidth/2,hh=innerHeight/2;let thr=1e9;if(namesOn&&cits.length>TGM){let n=0;for(const c of cits)if(!c.hid)TGA[n++]=cam.position.distanceTo(c.g.position);if(n>TGM){TGB.set(TGA.subarray(0,n));thr=TGB.subarray(0,n).sort()[TGM-1]}}for(const c of cits){const el=c.el,hasB=el.childElementCount>1;if(c.hid||(!namesOn&&!hasB)){if(c.sh!==0){el.style.display='none';c.sh=0}continue}tv.copy(c.g.position);tv.y+=c.g.scale.y*1.1;const d=cam.position.distanceTo(tv);tv.project(cam);const nm=namesOn&&d<44&&d<=thr+1.2,ok=tv.z<1&&Math.abs(tv.x)<1.15&&Math.abs(tv.y)<1.15&&d<75&&(hasB||nm);if(!ok){if(c.sh!==0){el.style.display='none';c.sh=0}continue}if(c.sh!==1){el.style.display='';c.sh=1}el.style.transform=`translate(${(tv.x*hw+hw).toFixed(1)}px,${(hh-tv.y*hh).toFixed(1)}px) translate(-50%,-100%) scale(${Math.max(.62,Math.min(1.05,30/d)).toFixed(2)})`;const nd=nm?'':'none';if(c.nd!==nd){c.nb.style.display=nd;c.nd=nd}}}
@@ -235,7 +352,7 @@ if(Math.abs(H-eh)>.002){eh=H;applyEnv(H);const hh=Math.floor(H),mm=Math.floor((H
 for(const r of turbs)r.rotation.z-=dt*1.1;
 if(fL)fL.intensity=.35+1.6*NT;
 {const c0=cits[0];if(c0&&c0.gl>0){c0.gl-=dt;c0.g.scale.set(.84+(Math.random()-.5)*.16,.84+(Math.random()-.5)*.1,.84);c0.g.visible=Math.random()>.12;if(c0.gl<=0){c0.g.scale.setScalar(.84);c0.g.visible=true}}}
-if((tk-=dt)<=0){tk=4+Math.random()*5;const c=cits[Math.random()*cits.length|0];if(c&&!c.el.querySelector('.bb'))bubble(c,pickR(NT>.6?TN:TD),3600)}
+if((tk-=dt)<=0){tk=(MOB?15:11)+Math.random()*13;dgAmb()}
 tags()}
 // ── ابزار مدیر (جابه‌جایی، ساخت، چرخش، حذف، نام، پیام)
 const cur=new THREE.Mesh(new THREE.PlaneGeometry(1.9,1.9),new THREE.MeshBasicMaterial({color:0x3ddc97,transparent:true,opacity:.45,depthWrite:false}));cur.rotation.x=-Math.PI/2;cur.position.y=.12;cur.visible=false;scene.add(cur);
@@ -260,7 +377,7 @@ else if(!mode){toast(bInfo(h.b));ownerHi(h.b)}}}
 R.domElement.addEventListener('pointerdown',e=>{dn={x:e.clientX,y:e.clientY,t:performance.now()};if(!T||!mode)return;
 if(mode==='move'){const h=pickAt(e);if(h.b){drag={g:h.g,b:h.b,c:[h.b.x,h.b.z]};ctl.enabled=false;cur.visible=true;cur.position.set(h.b.x*CELL,.12,h.b.z*CELL);cur.material.color.setHex(0x3ddc97)}}
 else if(mode==='build'){ctl.enabled=false;painted.clear();paintAt(e)}},true);
-addEventListener('pointermove',e=>{if(drag){const c=cellOf(e);if(c){drag.c=c;drag.g.position.set(c[0]*CELL,.35,c[1]*CELL);cur.position.set(c[0]*CELL,.12,c[1]*CELL);cur.material.color.setHex(cellOk(c[0],c[1],drag.b.id)?0x3ddc97:0xff5a4c)}}else if(mode==='build'&&dn&&(e.buttons&1)&&bt==='road')paintAt(e)});
+addEventListener('pointermove',e=>{if(drag){const c=cellOf(e);if(c){drag.c=c;drag.g.position.set(c[0]*CELL,.35,c[1]*CELL);cur.position.set(c[0]*CELL,.12,c[1]*CELL);cur.material.color.setHex(cellOk(c[0],c[1],drag.b.id)?0x3ddc97:0xff5a4c)}}else if(mode==='build'&&dn&&(e.buttons&1)&&(bt==='road'||bt==='path'))paintAt(e)});
 addEventListener('pointerup',async e=>{const was=dn;dn=null;
 if(drag){const d=drag,b=d.b;drag=null;ctl.enabled=true;cur.visible=false;d.g.position.y=0;const[x,z]=d.c;
 if((x!==b.x||z!==b.z)&&cellOk(x,z,b.id)){const ox=b.x,oz=b.z;b.x=x;b.z=z;try{await api('/api/admin/building/'+b.id,'PUT',{x,z,rot:b.rot});toast('✅ جابه‌جا و ذخیره شد')}catch(_){b.x=ox;b.z=oz;d.g.position.set(ox*CELL,0,oz*CELL)}}
@@ -294,7 +411,7 @@ function apRender(){const w=W;if(!w||!$('ap'))return;const s=w.stats,R={pop:'�
  <div class="r"><input class="f" id="ap_name" placeholder="نام کشور"><button class="s" data-a="rename">تغییر نام</button></div>`;
  else if(APtab==='story')h=`<h4>📜 اتفاق داستانی</h4><input class="f" style="width:100%" id="ap_et" placeholder="مثلاً: سیل مزارع را خراب کرد"><div class="r"><input class="n" id="ap_ef" type="number" placeholder="غذا ±"><input class="n" id="ap_em" type="number" placeholder="پول ±"><input class="n" id="ap_ep" type="number" placeholder="جمعیت ±"><button data-a="story">اعمال</button></div>
  <h4>🗳️ نتیجه‌ی رأی‌گیری مراحل</h4>${w.goals.map(g=>`<div class="b"><span>${apFd(g.at)} نفر: ${apEsc(g.title)} ${g.value?'✅ '+apEsc(g.value):''}</span>${s.subs>=g.at?`<button data-a="ms" data-k="${apEsc(g.key)}">ثبت نتیجه</button>`:'<span style="opacity:.6">هنوز نرسیده</span>'}</div>`).join('')}`;
- else if(APtab==='build'){const bs=w.buildings,hv=b=>b.type!=='road'&&b.type!=='tree',L=bs.filter(hv).concat(bs.filter(b=>!hv(b))),M=60;
+ else if(APtab==='build'){const bs=w.buildings,hv=b=>b.type!=='road'&&b.type!=='path'&&b.type!=='tree',L=bs.filter(hv).concat(bs.filter(b=>!hv(b))),M=60;
  h=`<h4>🏗️ ساخت ساختمان</h4><div class="r"><select id="ap_bt">${Object.entries(w.catalog).map(([k,v])=>`<option value="${apEsc(k)}">${apEsc(v)}</option>`).join('')}</select><input class="n" id="ap_bx" type="number" placeholder="x"><input class="n" id="ap_bz" type="number" placeholder="z"><label class="c"><input id="ap_free" type="checkbox">رایگان</label><button data-a="addb">بساز</button></div>
   <h4>🧱 ساختمان‌ها (${apFd(bs.length)})</h4><div class="l">${L.slice(0,M).map(b=>`<div class="b"><span>${apEsc(w.catalog[b.type]||b.type)} #${apFd(b.id)} (${apFd(b.x)}، ${apFd(b.z)})</span><span><button class="s" data-a="mvb" data-i="${b.id}">جابه‌جایی</button><button class="d" data-a="delb" data-i="${b.id}">حذف</button></span></div>`).join('')}${L.length>M?`<p>… و ${apFd(L.length-M)} مورد دیگر (با ابزارهای روی نقشه)</p>`:''}</div>`}
  else h=`<h4>🏷️ نام مستعار و پیام</h4><div class="r"><input class="n" style="width:84px" id="ap_ci" type="number" placeholder="شماره آدم"><input class="f" id="ap_cname" placeholder="نام مستعار (خالی = پیش‌فرض)"><button class="s" data-a="cit">ثبت نام</button></div>
@@ -360,14 +477,16 @@ put(new THREE.BoxGeometry(.028,.028,.012),GO,.085,.5,.14);
 [-.105,.105].forEach(x=>put(new THREE.BoxGeometry(.01,.01,.14),BK,x,.84,.08));
 const wt=new THREE.Mesh(new THREE.TorusGeometry(.036,.01,6,12),GO);wt.rotation.x=Math.PI/2;wt.position.y=-.2;c.aL.add(wt);
 fL=new THREE.PointLight(0xffd9a0,.3,4);fL.position.set(0,.9,.3);g.add(fL)}
-function addB(b){const g=new THREE.Group();build[b.type]?.(g,b);g.position.set(b.x*CELL,0,b.z*CELL);g.rotation.y=b.type==='road'?0:b.rot*Math.PI/180;g.scale.setScalar(.01);Object.assign(g.userData,{b,t:0});scene.add(g);objs.set(b.id,g)}
+function addB(b){const g=new THREE.Group();build[b.type]?.(g,b);g.position.set(b.x*CELL,0,b.z*CELL);g.rotation.y=(b.type==='road'||b.type==='path')?0:b.rot*Math.PI/180;g.scale.setScalar(.01);Object.assign(g.userData,{b,t:0});scene.add(g);objs.set(b.id,g)}
 // ═══ ناوبری v5: شبکهٔ ۰٫۵ واحدی با «هزینه» (جاده ارزان، چمن گران) + A* ⇒ آدم‌ها کنار جاده‌ها راه می‌روند و وارد آب/ساختمان نمی‌شوند
 const NS=.5,NN=180,NO=-45,nav=new Uint8Array(NN*NN),cost=new Float32Array(NN*NN),gs=new Float32Array(NN*NN),prv=new Int32Array(NN*NN);
-let regH=[],hqH=null,homes=[],mkts=[],farms=[],treeSp=[],roadC=[],ctr=[0,0],RAD=10;const roadSet=new Set(),homeById=new Map();
+let regH=[],hqH=null,homes=[],mkts=[],farms=[],treeSp=[],roadC=[],pathC=[],ctr=[0,0],RAD=10;const roadSet=new Set(),pathSet=new Set(),homeById=new Map();
 const ci=v=>Math.floor((v-NO)/NS),cw=i=>NO+(i+.5)*NS,walk=(x,z)=>{const i=ci(x),j=ci(z);return i>=0&&j>=0&&i<NN&&j<NN&&!nav[j*NN+i]};
 const pondM=(x,z)=>((x+17)/9.2)**2+((z+17)/6.6)**2<1; // برکه + حاشیهٔ امن ~۱ واحد
 function blk(x0,x1,z0,z1){for(let j=Math.max(0,ci(z0));j<=Math.min(NN-1,ci(z1));j++)for(let i=Math.max(0,ci(x0));i<=Math.min(NN-1,ci(x1));i++)nav[j*NN+i]=1}
-function rebuildNav(w){nav.fill(0);cost.fill(1.5);homes=[];mkts=[];farms=[];treeSp=[];roadC=[];roadSet.clear();homeById.clear();occ.clear();
+const PW=1,ROADC=3.5,D4=[[0,-1],[1,0],[0,1],[-1,0]],dry=(x,z)=>cost[ci(z)*NN+ci(x)]<3;
+function setCost(X,Z,hx,hz,v,force){for(let j=ci(Z-hz);j<=ci(Z+hz);j++)for(let i=ci(X-hx);i<=ci(X+hx);i++){if(i<0||j<0||i>=NN||j>=NN)continue;if(Math.abs(cw(i)-X)>hx||Math.abs(cw(j)-Z)>hz)continue;const k=j*NN+i;cost[k]=force?v:Math.min(cost[k],v)}}
+function rebuildNav(w){nav.fill(0);cost.fill(1.5);homes=[];mkts=[];farms=[];treeSp=[];roadC=[];roadSet.clear();pathC=[];pathSet.clear();homeById.clear();occ.clear();
 for(let j=0;j<NN;j++)for(let i=0;i<NN;i++){const x=cw(i),z=cw(j);if(Math.abs(x)>38.5||Math.abs(z)>38.5||pondM(x,z))nav[j*NN+i]=1}
 const trees=[];let sx=0,sz=0,n=0;
 for(const b of w.buildings){const X=b.x*CELL,Z=b.z*CELL,a=b.rot*Math.PI/180,q=b.rot%180?1:0,fx=Math.sin(a),fz=Math.cos(a);occ.add(b.x+','+b.z);
@@ -376,13 +495,17 @@ else if(b.type==='market'){const hx=q?.5:1.1,hz=q?1.1:.5;blk(X-hx,X+hx,Z-hz,Z+hz
 else if(b.type==='tree'){blk(X-.4,X+.4,Z-.4,Z+.4);trees.push([X,Z])}
 else if(b.type==='farm')farms.push({x:X,z:Z});
 else if(b.type==='road'){roadC.push({x:X,z:Z});roadSet.add(b.x+','+b.z)}
+else if(b.type==='path'){pathC.push({x:X,z:Z});pathSet.add(b.x+','+b.z)}
 if(b.type!=='tree'){sx+=X;sz+=Z;n++}}
 regH=homes.filter(h=>!h.hq).sort((a,b)=>a.id-b.id);hqH=homes.find(h=>h.hq)||null;ctr=n?[sx/n,sz/n]:[0,0];let E=0;for(const b of w.buildings)if(b.type!=='tree')E=Math.max(E,Math.hypot(b.x*CELL-ctr[0],b.z*CELL-ctr[1]));
 RAD=Math.min(34,Math.max(8+2.6*Math.log2(1+((w.stats&&w.stats.pop)||1)),E+5)); // با رشد جمعیت، محدودهٔ حرکت بزرگ‌تر می‌شود
-for(const{x:X,z:Z}of roadC)for(let j=ci(Z-1.5);j<=ci(Z+1.5);j++)for(let i=ci(X-1.5);i<=ci(X+1.5);i++){if(i<0||j<0||i>=NN||j>=NN)continue;const d=Math.max(Math.abs(cw(i)-X),Math.abs(cw(j)-Z)),k=j*NN+i;cost[k]=Math.min(cost[k],d<=1?.5:1)}
+for(const{x:X,z:Z}of roadC)setCost(X,Z,1,1,ROADC,1); // آسفالت: گران، برای ماشین‌هاست
+for(const{x:X,z:Z}of pathC){const cx=Math.round(X/CELL),cz=Math.round(Z/CELL),hw=PW/2,ln=1-hw;setCost(X,Z,hw,hw,.5);
+for(const[dx,dz]of D4){const k=(cx+dx)+','+(cz+dz);if(pathSet.has(k)||roadSet.has(k))setCost(X+dx*(hw+ln/2),Z+dz*(hw+ln/2),dx?ln/2:hw,dz?ln/2:hw,.5)}}
+for(const{x:X,z:Z}of roadC){const cx=Math.round(X/CELL),cz=Math.round(Z/CELL);for(const[dx,dz]of D4)if(pathSet.has((cx+dx)+','+(cz+dz)))setCost(X,Z,dx?1:PW/2,dz?1:PW/2,.7)} // محل رد شدن از خیابان
 for(const[X,Z]of trees)for(const[a,b]of[[.8,0],[-.8,0],[0,.8],[0,-.8]])if(walk(X+a,Z+b)){treeSp.push({x:X+a,z:Z+b,tx:X,tz:Z});break}
 refreshDeco()}
-function freeNear(cx,cz,R){for(let t=0;t<40;t++){const x=cx+(Math.random()-.5)*2*R,z=cz+(Math.random()-.5)*2*R;if(walk(x,z))return[x,z]}for(let r=1;r<80;r++)for(let a=0;a<12;a++){const x=cx+Math.cos(a/12*6.283)*r*.5,z=cz+Math.sin(a/12*6.283)*r*.5;if(walk(x,z))return[x,z]}return[0,0]}
+function freeNear(cx,cz,R){for(let t=0;t<40;t++){const x=cx+(Math.random()-.5)*2*R,z=cz+(Math.random()-.5)*2*R;if(walk(x,z)&&dry(x,z))return[x,z]}for(let r=1;r<80;r++)for(let a=0;a<12;a++){const x=cx+Math.cos(a/12*6.283)*r*.5,z=cz+Math.sin(a/12*6.283)*r*.5;if(walk(x,z))return[x,z]}return[0,0]}
 const D8=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]],hp=[],hf=[];
 function hpush(f,n){let i=hp.length;hp.push(n);hf.push(f);while(i){const p=(i-1)>>1;if(hf[p]<=f)break;hp[i]=hp[p];hf[i]=hf[p];i=p}hp[i]=n;hf[i]=f}
 function hpop(){const n=hp[0],ln=hp.pop(),lf=hf.pop();if(hp.length){let i=0;for(;;){let c=2*i+1;if(c>=hp.length)break;if(c+1<hp.length&&hf[c+1]<hf[c])c++;if(hf[c]>=lf)break;hp[i]=hp[c];hf[i]=hf[c];i=c}hp[i]=ln;hf[i]=lf}return n}
@@ -398,7 +521,7 @@ const ownersIdx=h=>{const r=[];for(let i=0;i<cits.length;i++)if(homeFor(i)===h)r
 function bInfo(b){const h=homeById.get(b.id);if(!h)return W.catalog[b.type]||'';const o=ownersIdx(h);
 if(h.hq)return(W.catalog.hq||'دفتر مدیرعامل')+' · '+nameOf(0);
 if(!o.length)return'خانهٔ خالی (هنوز صاحبی ندارد)';const nm=o.slice(0,3).map(nameOf).join('، ');return'خانهٔ '+nm+(o.length>3?' و '+fa(o.length-3)+' نفر دیگر':'')}
-function ownerHi(b){const h=homeById.get(b.id);if(!h)return;ownersIdx(h).slice(0,2).forEach(i=>{const c=cits[i];if(c&&!c.hid)bubble(c,h.hq?'دفتر منه':'اینجا خونهٔ منه!',2600)})}
+function ownerHi(b){const h=homeById.get(b.id);if(!h)return;ownersIdx(h).slice(0,2).forEach(i=>{const c=cits[i];if(c&&!c.hid)dgSay(c,[h.hq?'ownq':'own'],2800,'o')})}
 // شهروندان (اولی = بنیان‌گذار)
 const cits=[],skin=[0xf1c9a0,0xd9a577,0xb67d54,0x8d5a3b],cloth=[0xe0643a,0x3f8fb5,0xf0b73a,0xb0507f,0x5fae5a,0x7f6fd0,0xe8e0cf,0xd94f6a],hairC=[0x2b1d14,0x4a3020,0x1c1c1c,0x8a6a3a,0x6b3a1f],pants=[0x3b4a6b,0x4a3f35,0x6b6a5a,0x2f3a4a,0x5a4a3a,0x7a6a52],shoes=[0x2b2b2b,0x5a3a26,0xe8e8e8,0x8a3a2a],rr=a=>a[Math.random()*a.length|0];
 const CMAT=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.72});
@@ -489,7 +612,7 @@ if(!f&&Math.random()<.35){const ln=new THREE.Group(),lb=new THREE.Mesh(new THREE
 const hb=new THREE.Mesh(new THREE.SphereGeometry(.5,6,5),new THREE.MeshBasicMaterial({visible:false}));hb.position.y=.5;g.add(hb);c.i=i;g.userData.cit=c;const el=document.createElement('div');el.className='nt'+(f?' f':'');el.innerHTML='<b></b>';$('nts').appendChild(el);c.el=el;c.nb=el.firstChild;c.nb.textContent=nameOf(i);
 const p=freeNear(ctr[0],ctr[1],Math.min(RAD*.85,5+i*.5));g.position.set(p[0],0,p[1]);scene.add(g);return c}
 // ═══ مغز شهروندان v5: حالت‌ها = راه رفتن، رفتن به خانه (ورود/خروج از در)، مزرعه، بازار، گپ، نشستن زیر درخت، تماشای برکه، قدم زدن روی جاده، استراحت ═══
-const CH=['چه خبر؟','هاها، آره!','راستی شنیدی؟','جالبه...','فردا بازار شلوغه','خسته نباشی','هوا خوبه','بریم یه دور بزنیم؟'],SH=['ممنون!','تازه‌ست','یکی از اینا لطفاً','عالیه!'];
+
 const inR=p=>Math.hypot(p.x-ctr[0],p.z-ctr[1])<RAD,rp=a=>{const f=a.filter(inR);return f.length?f[Math.random()*f.length|0]:null};
 function pk(o){let s=0;for(const a of o)s+=a[0];let r=Math.random()*s;for(const a of o)if((r-=a[0])<=0)return a;return o[o.length-1]}
 function turn(c,ang,k){const g=c.g;let da=ang-g.rotation.y;da=Math.atan2(Math.sin(da),Math.cos(da));g.rotation.y+=da*Math.min(1,k)}
@@ -497,24 +620,26 @@ function moveTo(c,x,z,sp,dt,chk){const g=c.g,dx=x-g.position.x,dz=z-g.position.z
 const nx=g.position.x+dx/d*st,nz=g.position.z+dz/d*st;if(chk&&!walk(nx,nz))return-1;g.position.x=nx;g.position.z=nz;turn(c,Math.atan2(dx,dz),dt*9);
 c.ph+=dt*sp*8;const w=Math.sin(c.ph)*.65,k=Math.min(1,dt*14);c.lL.rotation.x+=(w-c.lL.rotation.x)*k;c.lR.rotation.x+=(-w-c.lR.rotation.x)*k;c.aL.rotation.x+=(-w*.8-c.aL.rotation.x)*k;c.aR.rotation.x+=(w*.8-c.aR.rotation.x)*k;
 c.by+=(Math.abs(Math.sin(c.ph))*.03-c.by)*Math.min(1,dt*10);g.rotation.x*=.8;return 0}
-function goTo(c,x,z,act=''){const g=c.g;if(PB--<=0){c.act='';c.st='stay';c.tm=.15+Math.random()*.4;return}if(!walk(x,z)){const f=freeNear(x,z,2);x=f[0];z=f[1]}const p=findPath(g.position.x,g.position.z,x,z);c.act=act;
+function goTo(c,x,z,act=''){const g=c.g;if(PB--<=0){c.act='';c.st='stay';c.tm=.15+Math.random()*.4;return}if(!walk(x,z)||!dry(x,z)){const f=freeNear(x,z,2);x=f[0];z=f[1]}const p=findPath(g.position.x,g.position.z,x,z);c.act=act;
 if(!p){c.act='';c.st='stay';c.tm=1+Math.random()*2;return}c.path=p;if(p.length)c.st='walk';else arrive(c)}
-function roadGoal(c){const r=rp(roadC);if(!r)return goTo(c,ctr[0],ctr[1]);goTo(c,r.x+(Math.random()-.5)*1.4,r.z+(Math.random()-.5)*1.4,'road')}
-function newGoal(c){const g=c.g,px=g.position.x,pz=g.position.z,nt=NT>.55,dk=NT>.2,tr=c.tr,o=[];c.pt=null;c.fa=null;c.act='';
-if(Math.hypot(px-ctr[0],pz-ctr[1])>RAD*1.05){if(roadC.length&&Math.random()<.6)return roadGoal(c);const f=freeNear(ctr[0],ctr[1],4);return goTo(c,f[0],f[1])} // افسار: از مرکز دور نشو
+function pathGoal(c,far){if(!pathC.length)return;let pl=pathC.filter(inR);if(!pl.length)pl=pathC;
+if(far!==false){const px=c.g.position.x,pz=c.g.position.z,nr=pl.filter(p=>{const d=Math.hypot(p.x-px,p.z-pz);return d>2&&d<14});if(nr.length)pl=nr}
+const t=rr(pl);goTo(c,t.x+(Math.random()-.5)*.5,t.z+(Math.random()-.5)*.5,'path')}
+function newGoal(c){const g=c.g,px=g.position.x,pz=g.position.z,nt=NT>.55,dk=NT>.2,tr=c.tr,o=[];c.pt=null;c.cv=null;c.fa=null;c.act='';
+if(Math.hypot(px-ctr[0],pz-ctr[1])>RAD*1.05){if(pathC.length&&Math.random()<.6)return pathGoal(c,false);const f=freeNear(ctr[0],ctr[1],4);return goTo(c,f[0],f[1])} // افسار: از مرکز دور نشو
 if(crowd(px,pz)>=5&&Math.random()<.85){const an=Math.random()*6.283,r2=RAD*.85*Math.sqrt(Math.random()),f=freeNear(ctr[0]+Math.cos(an)*r2,ctr[1]+Math.sin(an)*r2,3);return goTo(c,f[0],f[1])}
 const h=homeFor(c.i);
 if(h)o.push([nt?9:dk?2.5:.4+.7*(1-tr.so),'home']);
 if(!nt&&farms.length)o.push([2.4*(.3+1.4*tr.f),'farm']);
 if(!nt&&mkts.length)o.push([2*(.3+1.4*tr.s),'shop']);
-if(roadC.length)o.push([nt?.9:2.4,'road']);
-o.push([(nt?.9:1.5)*(.4+tr.so),'chat'],[nt?.6:.9,'sit'],[1.2,'free'],[1,'idle']);if(!nt)o.push([.6,'view']);
+if(pathC.length)o.push([nt?.7:2.8,'path']);
+o.push([(nt?.45:.8)*(.3+tr.so),'chat'],[nt?.6:.9,'sit'],[1.2,'free'],[1,'idle']);if(!nt)o.push([.6,'view']);
 const k=pk(o)[1];
 if(k==='home'){c.hs=h;return goTo(c,h.x+h.fx*1.25,h.z+h.fz*1.25,'enter')}
 if(k==='farm'){const f=rp(farms);if(f)return goTo(c,f.x+(Math.random()-.5)*.7,f.z+(Math.random()-.5)*.7,'farm')}
 else if(k==='shop'){const m=rp(mkts);if(m){c.fa=[m.cx,m.cz];return goTo(c,m.x+(Math.random()-.5)*.8,m.z,'shop')}}
-else if(k==='road')return roadGoal(c);
-else if(k==='chat'){const L=cits.filter(p=>p!==c&&!p.hid&&p.st==='stay'&&!p.act&&Math.hypot(p.g.position.x-px,p.g.position.z-pz)<16);
+else if(k==='path')return pathGoal(c);
+else if(k==='chat'&&dgNow()-DG.gC>9){const L=cits.filter(p=>p!==c&&!p.hid&&p.st==='stay'&&!p.act&&Math.hypot(p.g.position.x-px,p.g.position.z-pz)<16);
 if(L.length){const p=rr(L),dx=px-p.g.position.x,dz=pz-p.g.position.z,d=Math.hypot(dx,dz)||1;c.pt=p;return goTo(c,p.g.position.x+dx/d*.75,p.g.position.z+dz/d*.75,'chat')}}
 else if(k==='sit'){const s=rp(treeSp);if(s){c.fa=[s.tx,s.tz];return goTo(c,s.x,s.z,'sit')}}
 else if(k==='view'){for(let t=0;t<14;t++){const a=Math.random()*6.283,x=-17+Math.cos(a)*9.9,z=-17+Math.sin(a)*7.3;if(walk(x,z)&&inR({x,z})){c.fa=[-17,-17];return goTo(c,x,z,'view')}}}
@@ -522,12 +647,12 @@ else if(k==='free'){const b=Math.hypot(px-ctr[0],pz-ctr[1])>RAD*.6?ctr:[px,pz],f
 c.st='stay';c.tm=2+Math.random()*4}
 function arrive(c){const a=c.act;c.st='stay';c.tm=2+Math.random()*4;c.ty=null;c.lk=0;
 if(a==='enter'){const h=c.hs;if(h&&homeById.has(h.id)){c.st='enter';c.dp=[h.x+h.fx*.55,h.z+h.fz*.55]}else c.act='';return}
-if(a==='farm')c.tm=7+Math.random()*9;
-else if(a==='shop'){c.tm=3.5+Math.random()*4;bubble(c,pickR(SH),2200)}
-else if(a==='sit')c.tm=9+Math.random()*9;
-else if(a==='view')c.tm=6+Math.random()*6;
-else if(a==='chat'){const p=c.pt;if(p&&p.st==='stay'&&!p.act&&!p.hid){c.tm=p.tm=6+Math.random()*6;p.act='chat';p.pt=c;p.fa=c.fa=null;c.ct=.4;p.ct=3.2;c.talk=p.talk=0}else{c.act='';c.tm=1}}
-else if(a==='road'){if(c.chain<3&&Math.random()<.6){c.chain++;return roadGoal(c)}c.chain=0}}
+if(a==='farm'){c.tm=7+Math.random()*9;if(Math.random()<.25)dgSay(c,['farmw'],3000,'s')}
+else if(a==='shop'){c.tm=3.5+Math.random()*4;if(Math.random()<.4)dgSay(c,['shop'],2400,'s')}
+else if(a==='sit'){c.tm=9+Math.random()*9;if(Math.random()<.2)dgSay(c,['sitl'],3000,'s')}
+else if(a==='view'){c.tm=6+Math.random()*6;if(Math.random()<.25)dgSay(c,['viewl'],3000,'s')}
+else if(a==='chat'){const p=c.pt;if(p&&p.st==='stay'&&!p.act&&!p.hid){p.act='chat';p.pt=c;p.fa=c.fa=null;c.talk=p.talk=0;const ok=dgConv(c,p);c.tm=p.tm=ok?c.cv.L.length*3.4+2+Math.random()*2:3+Math.random()*3}else{c.act='';c.tm=1}}
+else if(a==='path'){if(c.chain<3&&Math.random()<.6){c.chain++;return pathGoal(c)}c.chain=0}}
 function leave(c){const g=c.g,h=c.hs&&homeById.get(c.hs.id);c.hid=0;g.visible=true;
 if(!h){const p=freeNear(g.position.x,g.position.z,3);g.position.set(p[0],0,p[1]);c.st='stay';c.act='';c.tm=.5;return}
 g.position.set(h.x+h.fx*.55,0,h.z+h.fz*.55);g.rotation.y=Math.atan2(h.fx,h.fz);c.st='exit';c.dp=[h.x+h.fx*1.25,h.z+h.fz*1.25];c.act=''}
@@ -539,7 +664,7 @@ case'shop':return[0,0,-.2,-.6+s*2,0,0];
 default:return[0,0,s,-s,0,0]}}
 const GR=new Map();const crowd=(x,z)=>{const kx=Math.floor(x/1.2),kz=Math.floor(z/1.2);let n=0;for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const l=GR.get((kx+a)*4096+kz+b);if(l)n+=l.length}return n};
 // ═══ حرکت هوشمند: جاخالی‌دادن (سمت راست رد می‌شوند)، سلام‌وعلیک وقتی به هم می‌رسند، و بعد جدا شدن ═══
-const GRT=['سلام!','خوبی؟','به‌به، سلام!','ببخشید!','راه باز!','چه خبر؟'],GRB=['سلام!','مرسی، تو خوبی؟','خوبم!','رد شو، رد شو!','هاها'];
+
 function steer(c,dt){const g=c.g,ax=g.position.x,az=g.position.z,hx=Math.sin(g.rotation.y),hz=Math.cos(g.rotation.y),kx=Math.floor(ax/1.2),kz=Math.floor(az/1.2);let sx=0,sz=0;
 for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const l=GR.get((kx+a)*4096+kz+b);if(!l)continue;for(const B of l){if(B===c||B.hid)continue;const dx=B.g.position.x-ax,dz=B.g.position.z-az,d=Math.hypot(dx,dz);if(d<1e-3||d>1.15)continue;const f=(dx*hx+dz*hz)/d;if(f<.25)continue;const cr=hx*dz-hz*dx,s=Math.abs(cr)<.08?1:(cr>0?1:-1),w=(1.15-d)*f;sx+=hz*s*w;sz+=-hx*s*w}}
 if(sx||sz){const m=Math.min(1,dt*1.6)*.9,nx=ax+sx*m,nz=az+sz*m;if(walk(nx,nz)){g.position.x=nx;g.position.z=nz}}}
@@ -547,9 +672,9 @@ function meet(A,B,dx,dz,d){if(d<.2||A.mc>0||B.mc>0||crowd(A.g.position.x,A.g.pos
 const fA=(dx*Math.sin(A.g.rotation.y)+dz*Math.cos(A.g.rotation.y))/d,fB=-(dx*Math.sin(B.g.rotation.y)+dz*Math.cos(B.g.rotation.y))/d;
 if(wa&&wb){if(fA<.5||fB<.5)return}else{const S=wa?B:A,f=wa?fA:fB;if(f<.5||S.act||S.hid||S.rx>0||S.st!=='stay')return}
 {const ax=A.g.position.x,az=A.g.position.z,px=Math.cos(A.g.rotation.y)*.8,pz=-Math.sin(A.g.rotation.y)*.8;if(!walk(ax+px,az+pz)||!walk(ax-px,az-pz))return}
-const p=.2+.45*(((A.tr&&A.tr.so)||.5)+((B.tr&&B.tr.so)||.5))/2;A.mc=B.mc=16+Math.random()*20;if(Math.random()>p)return;
+const p=.12+.3*(((A.tr&&A.tr.so)||.5)+((B.tr&&B.tr.so)||.5))/2;A.mc=B.mc=16+Math.random()*20;if(Math.random()>p)return;
 const gt=1.3+Math.random()*1.2;for(const [X,Y] of [[A,B],[B,A]])if(X.st==='walk'){X.st='greet';X.gt=gt;X.gp=Y}
-const f1=wa?A:B,f2=wa?B:A;bubble(f1,pickR(GRT),1700);setTimeout(()=>{if(!f2.hid)bubble(f2,pickR(GRB),1600)},450+Math.random()*350)}
+dgGreet(wa?A:B,wa?B:A)}
 function stepCits(dt,t){PB=Math.min(MOB?5:10,(MOB?2:4)+(cits.length/120|0));for(const c of cits){const g=c.g,S=c.st;
 if(S==='inside'){if(!c.hs||!homeById.has(c.hs.id))leave(c);else if((c.tm-=dt)<=0){if(NT>.6&&Math.random()<.75)c.tm=15+Math.random()*30;else leave(c)}continue}
 if(S!=='enter'&&S!=='exit'&&!walk(g.position.x,g.position.z)){const p=freeNear(g.position.x,g.position.z,3);g.position.set(p[0],0,p[1]);c.path=[];c.st='stay';c.act='';c.tm=.3}
@@ -558,10 +683,10 @@ else if(S==='exit'){if(moveTo(c,c.dp[0],c.dp[1],c.sp*.85,dt,0)===1){c.st='stay';
 else if(S==='greet'){const q=c.gp;if(q&&!q.hid)turn(c,Math.atan2(q.g.position.x-g.position.x,q.g.position.z-g.position.z),dt*8);
 const k=Math.min(1,dt*8);c.lL.rotation.x+=(0-c.lL.rotation.x)*k;c.lR.rotation.x+=(0-c.lR.rotation.x)*k;c.aL.rotation.x+=(0-c.aL.rotation.x)*k;c.aR.rotation.x+=((c.gt>.6?-2.4+Math.sin(t*14)*.45:0)-c.aR.rotation.x)*k;c.by+=(0-c.by)*k;
 if((c.gt-=dt)<=0){c.st=c.path&&c.path.length?'walk':'stay';c.gp=null;if(c.st==='stay')c.tm=.3}}
-else if(S==='walk'){const p=c.path[0];if(!p)arrive(c);else{const r=moveTo(c,p[0],p[1],c.sp*(c.act==='road'?.85:1),dt,1);if(r===0)steer(c,dt);if(r===1){c.path.shift();if(!c.path.length)arrive(c)}else if(r<0){c.path=[];c.st='stay';c.act='';c.tm=.4}}}
+else if(S==='walk'){const p=c.path[0];if(!p)arrive(c);else{const r=moveTo(c,p[0],p[1],c.sp*(c.act==='path'?.9:1),dt,1);if(r===0)steer(c,dt);if(r===1){c.path.shift();if(!c.path.length)arrive(c)}else if(r<0){c.path=[];c.st='stay';c.act='';c.tm=.4}}}
 else{const T=pose(c,t),k=Math.min(1,dt*7);c.lL.rotation.x+=(T[0]-c.lL.rotation.x)*k;c.lR.rotation.x+=(T[1]-c.lR.rotation.x)*k;c.aL.rotation.x+=(T[2]-c.aL.rotation.x)*k;c.aR.rotation.x+=(T[3]-c.aR.rotation.x)*k;c.by+=(T[4]-c.by)*k;g.rotation.x+=(T[5]-g.rotation.x)*k;c.body.scale.y=1+Math.sin(t*2+c.ph)*.015;
 const p=c.pt;
-if(c.act==='chat'&&p&&p.pt===c){turn(c,Math.atan2(p.g.position.x-g.position.x,p.g.position.z-g.position.z),dt*5);c.talk-=dt;if((c.ct-=dt)<=0){c.ct=4+Math.random()*2;c.talk=1.8;bubble(c,pickR(CH),2600)}}
+if(c.act==='chat'&&p&&p.pt===c){turn(c,Math.atan2(p.g.position.x-g.position.x,p.g.position.z-g.position.z),dt*5);c.talk-=dt;const v=c.cv;if(v&&(v.t-=dt)<=0)dgTurn(c,p)}
 else if(c.fa)turn(c,Math.atan2(c.fa[0]-g.position.x,c.fa[1]-g.position.z),dt*4);
 else{if(c.ty==null)c.ty=g.rotation.y;if((c.lk-=dt)<=0){c.lk=1.5+Math.random()*3;c.ty=g.rotation.y+(Math.random()-.5)*2}turn(c,c.ty,dt*3)}
 if((c.dc=(c.dc||0)-dt)<=0){c.dc=1+Math.random();if(S==='stay'&&c.act!=='chat'&&c.tm>.8&&crowd(g.position.x,g.position.z)>=6)c.tm=.2+Math.random()}
@@ -606,7 +731,7 @@ function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clear
 function bump(k,d){const e=document.createElement('span');e.className='d';e.textContent=(d>0?'+':'')+fa(d,k==='money'?1:0);$('c_'+k).appendChild(e);setTimeout(()=>e.remove(),1600)}
 function sync(w){W=w;rev=w.rev;const ids=new Set(w.buildings.map(b=>b.id));
 for(const[id,g]of objs)if(!ids.has(id)){scene.remove(g);objs.delete(id)}
-for(const b of w.buildings){const g=objs.get(b.id);if(!g)addB(b);else if(g.userData.b.x!==b.x||g.userData.b.z!==b.z||g.userData.b.rot!==b.rot){g.position.set(b.x*CELL,0,b.z*CELL);if(b.type!=='road')g.rotation.y=b.rot*Math.PI/180;g.userData.b=b}}
+for(const b of w.buildings){const g=objs.get(b.id);if(!g)addB(b);else if(g.userData.b.x!==b.x||g.userData.b.z!==b.z||g.userData.b.rot!==b.rot){g.position.set(b.x*CELL,0,b.z*CELL);if(b.type!=='road'&&b.type!=='path')g.rotation.y=b.rot*Math.PI/180;g.userData.b=b}}
 plan.visible=!w.buildings.some(b=>b.type==='hq');
 rebuildNav(w);roads(w);
 const s=w.stats;tgt.pop=s.pop;tgt.money=s.money/1e6;tgt.food=s.food;
@@ -614,7 +739,7 @@ const ti=w.tiers.indexOf(w.tier);$('tn').textContent=w.tier;$('path').innerHTML=
 const g=w.goals.find(g=>s.subs<g.at),pend=w.goals.find(g=>s.subs>=g.at&&!g.value);
 $('quest').innerHTML=`<div class="fl">${IC.flag}</div><div class="tx">${pend?`<strong>${pend.title}</strong><small>رأی‌گیری در جریان است</small>`:g?`<div class="qh"><strong>${fa(g.at)} نفر ← ${g.title}</strong><small>${fa(s.subs)} از ${fa(g.at)}</small></div><div id="bar"><u style="width:${Math.min(100,s.subs/g.at*100)}%"></u></div>`:'<strong>همه هدف‌ها انجام شد</strong>'}</div>`;
 $('ev').innerHTML=w.events.map(e=>`<div><time>${new Date(e.t).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})}</time>${noEm(e.text).replace(/</g,'&lt;')}</div>`).join('');
-if(seenEv&&w.events[0]&&w.events[0].t+w.events[0].text!==seenEv)toast(noEm(w.events[0].text));seenEv=w.events[0]?w.events[0].t+w.events[0].text:'';
+if(seenEv&&w.events[0]&&w.events[0].t+w.events[0].text!==seenEv){toast(noEm(w.events[0].text));dgEvent(noEm(w.events[0].text))}seenEv=w.events[0]?w.events[0].t+w.events[0].text:'';
 POP=s.pop;fitCits();chatSync(w)}
 function fitCits(){const n=Math.max(POP?1:0,Math.min(POP,VIS,HARD));let ch=0;while(cits.length<n){cits.push(mkCit(cits.length));ch=1}while(cits.length>n){const c=cits.pop();scene.remove(c.g);c.el.remove();ch=1}if(ch)names()}
 async function poll(){try{const w=await(await fetch('/api/world?since='+rev,{cache:'no-store'})).json();if(!w.same)sync(w);$('dot').className=''}catch(e){$('dot').className='off'}}
