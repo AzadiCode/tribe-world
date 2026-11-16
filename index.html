@@ -260,7 +260,7 @@ $('ba').onclick=async()=>{if(!T){const k=await ask('رمز مدیر (ADMIN_KEY)'
 $('btm').onclick=async()=>{const e=W.env||{mode:'live'},seq=[['live',0,'🕒 زمان زنده'],['lapse',0,'⏩ گذر سریع روز'],['fixed',12,'☀️ ظهر ثابت'],['fixed',19,'🌇 غروب ثابت'],['fixed',23,'🌙 شب ثابت']],i=seq.findIndex(s=>s[0]===e.mode&&(e.mode!=='fixed'||Math.round(e.hour)===s[1])),n=seq[(i+1)%seq.length];toast(n[2]);api('/api/admin/env','POST',{mode:n[0],hour:n[1]}).catch(()=>0)};
 if(!new URLSearchParams(location.search).has('admin'))$('ba').style.display='none';else if(T)setAdm(1);
 // ── ضبط ویدیوی بازی (فقط پنل مدیر): تصویر سه‌بعدی + موسیقی بازی، با کیفیت بالا؛ در پایان فایل کامل ذخیره می‌شود
-const RC={on:0};let rec=null,rch=[],rbytes=0,rt0=0,racc=0,rtick=0,rAud=null,rUrl='';const RCAP=380*1048576,RFPS=30,
+const RC={on:0};let rec=null,rch=[],rbytes=0,rt0=0,racc=0,rtick=0,rAud=null,rUrl='';const RCAP=150*1048576,RFPS=30,
 RMT=['video/mp4;codecs=avc1.640033,mp4a.40.2','video/mp4;codecs=avc1,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
 document.body.insertAdjacentHTML('beforeend','<div id="rect" class="g">● <span></span></div>');
 const rsec=()=>Math.floor((racc+(rt0?performance.now()-rt0:0))/1000),r2=n=>String(n).padStart(2,'0');
@@ -272,7 +272,7 @@ const pr=Math.min(Math.max(devicePixelRatio||1,1.5),2.5),w=Math.floor(innerWidth
 RC.on=1;R.setPixelRatio(1);R.setSize(w,h,false);
 let st=R.domElement.captureStream(RFPS);const vt=st.getVideoTracks();rAud=null;
 try{const a=window.__tribeAudio&&window.__tribeAudio();if(a&&a.ac&&a.out&&a.ac.state==='running'){const d=a.ac.createMediaStreamDestination();a.out.connect(d);rAud={d,out:a.out};st=new MediaStream([...vt,...d.stream.getAudioTracks()])}}catch(e){rAud=null}
-try{rec=new MediaRecorder(st,{mimeType:mt,videoBitsPerSecond:Math.round(Math.max(8e6,Math.min(24e6,w*h*RFPS*.2))),audioBitsPerSecond:192000})}catch(e){recEnd();return toast('شروع ضبط ممکن نشد')}
+try{rec=new MediaRecorder(st,{mimeType:mt,videoBitsPerSecond:Math.round(Math.max(8e6,Math.min(12e6,w*h*RFPS*.2))),audioBitsPerSecond:192000})}catch(e){recEnd();return toast('شروع ضبط ممکن نشد')}
 rch=[];rbytes=0;
 rec.ondataavailable=e=>{if(e.data&&e.data.size){rch.push(e.data);rbytes+=e.data.size;if(rbytes>RCAP&&rec&&rec.state!=='inactive'){toast('به سقف حجم رسید؛ ویدیو ذخیره می‌شود');recStop()}}};
 rec.onerror=()=>{toast('خطا در ضبط؛ آنچه ضبط شده ذخیره می‌شود');recStop()};
@@ -513,7 +513,7 @@ return{E,V:.24,N:MEL.length,step,chain}})();
 I1=S+'<path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.5 7.5 0 0 1 0 10.4"/></svg>',I0=S+'<path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>',
 paint=()=>{bm.innerHTML=muted?I0:I1;bm.title=muted?'پخش موسیقی':'قطع صدا'};
 function boot(){if(ac)return true;const A=window.AudioContext||window.webkitAudioContext;if(!A)return false;ac=new A();o=MU.chain(ac,ac.destination);o.m.gain.value=0;nt=ac.currentTime+.15;
-setInterval(()=>{if(ac.state!=='running')return;while(nt<ac.currentTime+.6){MU.step(ac,o.bus,nt,sn++);nt+=MU.E}},150);return true}
+setInterval(()=>{if(ac.state!=='running')return;if(nt<ac.currentTime-.1)nt=ac.currentTime+.05;while(nt<ac.currentTime+1.2){MU.step(ac,o.bus,nt,sn++);nt+=MU.E}},120);return true}
 function on(){if(muted||!boot())return;ac.resume().then(()=>{o.m.gain.cancelScheduledValues(ac.currentTime);o.m.gain.setTargetAtTime(MU.V,ac.currentTime,.9)}).catch(()=>0)}
 function off(){if(!ac)return;o.m.gain.cancelScheduledValues(ac.currentTime);o.m.gain.setTargetAtTime(0,ac.currentTime,.12);setTimeout(()=>{if(muted)ac.suspend()},700)}
 const EV=['pointerup','touchend','keydown'],un=()=>{if(muted)return;on();if(ac&&ac.state==='running')EV.forEach(e=>removeEventListener(e,un,true))};EV.forEach(e=>addEventListener(e,un,true));
