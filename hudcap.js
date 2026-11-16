@@ -1,10 +1,10 @@
 // ═══ ضبط رابط روی موبایل ═══ همان عنصرهای واقعی صفحه (منابع، مرحله، هدف، مکالمه، اسم و حرف شهروندان) را روی هر فریم ضبط می‌کشد.
-// ساده و بدون کتابخانه: پس‌زمینه، دورخط، متن و آیکن SVG. (بدون محو شیشه‌ای و سایه.) برای ضبط عنصر جدید فقط سلکتورش را به ROOTS در index.html اضافه کن.
+// ساده و بدون کتابخانه: پس‌زمینه، دورخط، متن و آیکن SVG. برای ضبط عنصر جدید فقط سلکتورش را به ROOTS در index.html اضافه کن.
 export function createHudCapture(src,roots){
 const cv=document.createElement('canvas'),x=cv.getContext('2d'),imgs=new Map(),P=v=>parseFloat(v)||0;
-cv.width=src.width;cv.height=src.height;let last=0;
+cv.width=src.width;cv.height=src.height;let last=0,K=1;
 const alpha=c=>{if(!c||c==='transparent')return 0;const m=c.match(/rgba?\(([^)]+)\)/);if(!m)return 1;const p=m[1].split(/[ ,\/]+/);return p.length>3?+p[3]:1};
-function rr(l,t,w,h,r){r=Math.min(r,w/2,h/2);x.beginPath();x.roundRect?x.roundRect(l,t,w,h,r):x.rect(l,t,w,h)}
+function rr(l,t,w,h,r,keep){r=Math.min(r,w/2,h/2);if(!keep)x.beginPath();x.roundRect?x.roundRect(l,t,w,h,r):x.rect(l,t,w,h)}
 function svg(el,r,cs){const c=el.cloneNode(true);c.setAttribute('xmlns','http://www.w3.org/2000/svg');c.setAttribute('width',r.width);c.setAttribute('height',r.height);
 // استایل‌های CSS (fill/stroke…) داخل تصویر SVG اعمال نمی‌شوند؛ مقدار نهایی‌شان را روی خود SVG می‌نویسیم تا آیکن‌ها سیاه و توپر نشوند
 [['fill','fill'],['stroke','stroke'],['stroke-width','strokeWidth'],['stroke-linecap','strokeLinecap'],['stroke-linejoin','strokeLinejoin']].forEach(([a,b])=>{if(cs[b])c.setAttribute(a,cs[b])});
@@ -19,11 +19,22 @@ function walk(el,al){if(el.style&&el.style.display==='none')return;const cs=getC
 if(r.width<1||r.height<1||r.right<0||r.bottom<0||r.left>innerWidth||r.top>innerHeight)return;x.globalAlpha=op;
 if(el.tagName&&el.tagName.toLowerCase()==='svg')return svg(el,r,cs);
 const ba=alpha(cs.backgroundColor),bw=P(cs.borderTopWidth),rad=cs.borderTopLeftRadius,R=rad.includes('%')?Math.min(r.width,r.height)*P(rad)/100:P(rad);
+// سایه‌ی بیرونی (box-shadow) مثل خود بازی: فقط بیرون کادر کشیده می‌شود
+const sh=(cs.boxShadow||'').match(/^(rgba?\([^)]+\))\s+(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px/);
+if(sh&&ba>0){x.save();x.beginPath();x.rect(-1e4,-1e4,2e4,2e4);rr(r.left,r.top,r.width,r.height,R,1);x.clip('evenodd');x.shadowColor=sh[1];x.shadowOffsetX=+sh[2]*K;x.shadowOffsetY=+sh[3]*K;x.shadowBlur=+sh[4]*K;x.fillStyle='#000';rr(r.left,r.top,r.width,r.height,R);x.fill();x.restore();x.globalAlpha=op}
+// محو شیشه‌ای پشت پنل (backdrop-filter) مثل خود بازی
+const bf=cs.backdropFilter||cs.webkitBackdropFilter||'',bl=bf.match(/blur\(([\d.]+)px\)/);
+if(bl&&ba>0&&'filter' in x){const b=+bl[1],pd=b*3,sa=bf.match(/saturate\(([\d.]+)\)/);x.save();rr(r.left,r.top,r.width,r.height,R);x.clip();x.filter='blur('+b*K+'px)'+(sa?' saturate('+sa[1]+')':'');
+const l0=r.left-pd,t0=r.top-pd,w0=r.width+pd*2,h0=r.height+pd*2;x.globalAlpha=1;x.drawImage(src,l0*K,t0*K,w0*K,h0*K,l0,t0,w0,h0);x.restore();x.globalAlpha=op}
 if(ba>0){x.fillStyle=cs.backgroundColor;rr(r.left,r.top,r.width,r.height,R);x.fill()}
+// پس‌زمینه‌ی گرادیانی (مثل نوار پیشرفت هدف)
+const gm=(cs.backgroundImage||'').match(/linear-gradient\((?:(-?[\d.]+)deg,\s*)?(.+)\)$/);
+if(gm){const cols=gm[2].match(/rgba?\([^)]+\)/g)||[];if(cols.length>1){const an=(gm[1]!==undefined?+gm[1]:180)*Math.PI/180,cx=r.left+r.width/2,cy=r.top+r.height/2,hl=(Math.abs(r.width*Math.sin(an))+Math.abs(r.height*Math.cos(an)))/2,dx=Math.sin(an)*hl,dy=-Math.cos(an)*hl,gr=x.createLinearGradient(cx-dx,cy-dy,cx+dx,cy+dy);cols.forEach((c,i)=>gr.addColorStop(i/(cols.length-1),c));x.fillStyle=gr;rr(r.left,r.top,r.width,r.height,R);x.fill()}}
 if(bw>0&&alpha(cs.borderTopColor)>0&&cs.borderTopStyle!=='none'){x.strokeStyle=cs.borderTopColor;x.lineWidth=bw;rr(r.left,r.top,r.width,r.height,R);x.stroke()}
 const sc=el.offsetWidth?r.width/el.offsetWidth:1;
-for(const n of el.childNodes){if(n.nodeType===3)text(n,el,cs,sc);else if(n.nodeType===1)walk(n,op)}x.globalAlpha=al}
+const ov=cs.overflowX==='hidden';if(ov){x.save();rr(r.left,r.top,r.width,r.height,R);x.clip()}
+for(const n of el.childNodes){if(n.nodeType===3)text(n,el,cs,sc);else if(n.nodeType===1)walk(n,op)}if(ov)x.restore();x.globalAlpha=al}
 function frame(){const n=performance.now();if(n-last<28)return;last=n;
-x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.drawImage(src,0,0);x.setTransform(cv.width/innerWidth,0,0,cv.height/innerHeight,0,0);
+x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.drawImage(src,0,0);K=cv.width/innerWidth;x.setTransform(cv.width/innerWidth,0,0,cv.height/innerHeight,0,0);
 try{roots.forEach(s=>document.querySelectorAll(s).forEach(e=>walk(e,1)))}catch(e){}x.globalAlpha=1}
 return{canvas:cv,frame}}
