@@ -241,6 +241,11 @@ def tg_setup(base):
     _base = base
     me = tg_api("getMe").get("result") or {}; BOT_USER = me.get("username", "")
     tg_api("setWebhook", url=f"{base}/tg/{HOOK}", allowed_updates=["message"])
+    for sc in ({"type": "default"}, {"type": "all_private_chats"}):          # دستورهای قدیمی ربات پاک می‌شود؛ فقط /start می‌ماند
+        for lc in ("", "fa", "en"):
+            tg_api("deleteMyCommands", scope=sc, **({"language_code": lc} if lc else {}))
+    tg_api("setMyCommands", commands=[{"command": "start", "description": "شروع"}])
+    tg_api("setMyCommands", commands=[{"command": "start", "description": "شروع"}], language_code="fa")
     tg_api("setChatMenuButton", menu_button={"type": "web_app", "text": "🎮 ورود به بازی", "web_app": {"url": base}})
     log.info("telegram bot @%s ready, webhook %s/tg/…", BOT_USER, base)
 
@@ -270,8 +275,8 @@ def tg_uid(init):
 
 def welcome(chat_id):
     url = _base or PUBLIC_URL
-    tg_api("sendMessage", chat_id=chat_id, text="🌍 به «جهان زنده قبیله» خوش اومدی!\n\nبا دکمهٔ زیر وارد بازی شو؛ همین‌جا به قبیله می‌پیوندی و یه کارکتر اختصاصی برای خودت می‌گیری.",
-           reply_markup={"inline_keyboard": [[{"text": "🎮 ورود به بازی", "web_app": {"url": url}}]]})
+    tg_api("sendMessage", chat_id=chat_id, text="سلام، خوش اومدی! 👋\n\nاینجا «جهان زنده قبیله»‌ست؛ یه دنیای کوچیک که آدماش راه می‌رن، خونه می‌سازن و زندگی می‌کنن 🌍\n\nدکمهٔ پایین رو بزن و بیا تو؛ همون لحظه یه کارکتر مخصوص خودت برات ساخته می‌شه 😉",
+           reply_markup={"inline_keyboard": [[{"text": "🎮 ورود به بازی", "web_app": {"url": url}}], [{"text": "🌐 باز کردن در مرورگر", "url": url}]]})
 
 
 @app.post("/tg/<tok>")
