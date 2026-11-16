@@ -20,8 +20,9 @@ if(r.width<1||r.height<1||r.right<0||r.bottom<0||r.left>innerWidth||r.top>innerH
 if(el.tagName&&el.tagName.toLowerCase()==='svg')return svg(el,r,cs);
 const ba=alpha(cs.backgroundColor),bw=P(cs.borderTopWidth),rad=cs.borderTopLeftRadius,R=rad.includes('%')?Math.min(r.width,r.height)*P(rad)/100:P(rad);
 // سایه‌ی بیرونی (box-shadow) مثل خود بازی: فقط بیرون کادر کشیده می‌شود
-const sh=(cs.boxShadow||'').match(/^(rgba?\([^)]+\))\s+(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px/);
-if(sh&&ba>0){x.save();x.beginPath();x.rect(-1e4,-1e4,2e4,2e4);rr(r.left,r.top,r.width,r.height,R,1);x.clip('evenodd');x.shadowColor=sh[1];x.shadowOffsetX=+sh[2]*K;x.shadowOffsetY=+sh[3]*K;x.shadowBlur=+sh[4]*K;x.fillStyle='#000';rr(r.left,r.top,r.width,r.height,R);x.fill();x.restore();x.globalAlpha=op}
+const shs=(cs.boxShadow&&cs.boxShadow!=='none'?cs.boxShadow.split(/,(?![^(]*\))/):[]).map(q=>q.trim()).filter(q=>!/inset/.test(q));
+if(shs.length&&ba>0){x.save();x.beginPath();x.rect(-1e4,-1e4,2e4,2e4);rr(r.left,r.top,r.width,r.height,R,1);x.clip('evenodd');
+for(const q of shs){const m=q.match(/(rgba?\([^)]+\))\s+(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px(?:\s+(-?[\d.]+)px)?/);if(!m)continue;const sp=+(m[5]||0);x.shadowColor=m[1];x.shadowOffsetX=(+m[2]+1e4)*K;x.shadowOffsetY=+m[3]*K;x.shadowBlur=+m[4]*K;x.fillStyle='#000';rr(r.left-sp-1e4,r.top-sp,r.width+sp*2,r.height+sp*2,R+sp);x.fill()}x.restore();x.globalAlpha=op}
 // محو شیشه‌ای پشت پنل (backdrop-filter) مثل خود بازی
 const bf=cs.backdropFilter||cs.webkitBackdropFilter||'',bl=bf.match(/blur\(([\d.]+)px\)/);
 if(bl&&ba>0&&'filter' in x){const b=+bl[1],pd=b*3,sa=bf.match(/saturate\(([\d.]+)\)/);x.save();rr(r.left,r.top,r.width,r.height,R);x.clip();x.filter='blur('+b*K+'px)'+(sa?' saturate('+sa[1]+')':'');
@@ -33,7 +34,12 @@ if(gm){const cols=gm[2].match(/rgba?\([^)]+\)/g)||[];if(cols.length>1){const an=
 if(bw>0&&alpha(cs.borderTopColor)>0&&cs.borderTopStyle!=='none'){x.strokeStyle=cs.borderTopColor;x.lineWidth=bw;rr(r.left,r.top,r.width,r.height,R);x.stroke()}
 const sc=el.offsetWidth?r.width/el.offsetWidth:1;
 const ov=cs.overflowX==='hidden';if(ov){x.save();rr(r.left,r.top,r.width,r.height,R);x.clip()}
-for(const n of el.childNodes){if(n.nodeType===3)text(n,el,cs,sc);else if(n.nodeType===1)walk(n,op)}if(ov)x.restore();x.globalAlpha=al}
+for(const n of el.childNodes){if(n.nodeType===3)text(n,el,cs,sc);else if(n.nodeType===1)walk(n,op)}if(ov)x.restore();
+// دم حباب گفتگو (::after مثلثی)
+for(const pe of ['::after']){const pc=getComputedStyle(el,pe);if(!pc||pc.content==='none'||pc.content==='normal')continue;const bt=P(pc.borderTopWidth),bl=P(pc.borderLeftWidth),br=P(pc.borderRightWidth),bb=P(pc.borderBottomWidth),w=P(pc.width)+bl+br,h=P(pc.height)+bt+bb;if(!(w>0&&h>0)||alpha(pc.borderTopColor)===0&&alpha(pc.borderBottomColor)===0)continue;
+let L,T;if(pc.position==='absolute'){L=r.left+P(pc.left)+P(pc.marginLeft);T=r.bottom-P(pc.bottom)-h}else{L=r.left+(r.width-w)/2;T=r.bottom-h+P(pc.marginTop)}
+x.globalAlpha=op;x.beginPath();if(bt>0&&alpha(pc.borderTopColor)>0){x.fillStyle=pc.borderTopColor;x.moveTo(L,T);x.lineTo(L+w,T);x.lineTo(L+w/2,T+bt)}else{x.fillStyle=pc.borderBottomColor;x.moveTo(L,T+h);x.lineTo(L+w,T+h);x.lineTo(L+w/2,T+h-bb)}x.fill()}
+x.globalAlpha=al}
 function frame(){const n=performance.now();if(n-last<28)return;last=n;
 x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.drawImage(src,0,0);K=cv.width/innerWidth;x.setTransform(cv.width/innerWidth,0,0,cv.height/innerHeight,0,0);
 try{roots.forEach(s=>document.querySelectorAll(s).forEach(e=>walk(e,1)))}catch(e){}x.globalAlpha=1}

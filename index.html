@@ -472,7 +472,7 @@ const mt=RMT.find(t=>MediaRecorder.isTypeSupported(t));if(!mt)return toast('قا
 if(rUrl){URL.revokeObjectURL(rUrl);rUrl=''}
 const pr=LOW?1:Math.min(Math.max(devicePixelRatio||1,1.5),2.5),w=Math.floor(innerWidth*pr)&~1,h=Math.floor(innerHeight*pr)&~1; // وضوح بالاتر، ابعاد زوج برای انکودر
 RC.on=1;R.setPixelRatio(1);R.setSize(w,h,false);
-let st,hc=null;try{hc=HUDM&&HUDM.createHudCapture(R.domElement,['#res','#quest'])}catch(e){hc=null}
+let st,hc=null;try{hc=HUDM&&HUDM.createHudCapture(R.domElement,['#res','#tier','#quest','#cap','#nts'])}catch(e){hc=null}
 st=hc?hc.canvas.captureStream(RFPS):R.domElement.captureStream(RFPS);RCOMP=hc?hc.frame:null;const vt=st.getVideoTracks();rAud=null;
 try{const a=window.__tribeAudio&&window.__tribeAudio();if(a&&a.ac&&a.out&&a.ac.state==='running'){const d=a.ac.createMediaStreamDestination();a.out.connect(d);rAud={d,out:a.out};st=new MediaStream([...vt,...d.stream.getAudioTracks()])}}catch(e){rAud=null}
 rgo(st,mt,w,h)}
@@ -506,9 +506,9 @@ document.addEventListener('visibilitychange',()=>{if(!rec||rec.state==='inactive
 if(document.hidden){if(rec.state==='recording'){rec.pause();racc+=performance.now()-rt0;rt0=0}}else if(rec.state==='paused'){rec.resume();rt0=performance.now()}});
 addEventListener('beforeunload',e=>{if(rec&&rec.state!=='inactive'){e.preventDefault();e.returnValue=''}});
 $('brec').onclick=()=>RC.on?recStop():recStart();
-$('brec2').onclick=()=>CIN?CIN.toggle():(rec?recStop():recStartUI());
+$('brec2').onclick=()=>rec?recStop():CIN?CIN.toggle():recStartUI();
 import('/hudcap.js').then(m=>HUDM=m).catch(e=>console.warn('hudcap',e));
-import('/cinema.js').then(m=>{CIN=m.initCinema({cam,ctl,toast,scene,low:LOW,center:()=>ctr,radius:()=>RAD,hq:()=>hqH,rec:{start:()=>(MOB0||!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia))?recStart():recStartUI(),stop:recStop,on:()=>!!rec}})}).catch(e=>console.warn('cinema',e));
+import('/cinema.js').then(m=>{CIN=m.initCinema({cam,ctl,toast,low:LOW,center:()=>ctr,radius:()=>RAD,hq:()=>hqH,rec:{start:()=>(MOB0||!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia))?recStart():recStartUI(),stop:recStop,on:()=>!!rec}})}).catch(e=>console.warn('cinema',e));
 addEventListener('keydown',e=>{if(e.key==='F8'){e.preventDefault();rec?recStop():recStartUI()}});
 // ── ظاهر بنیان‌گذار: هکر نئونی (پالتوی تاریک، گاگل، چشم سبز، دورخط درخشان)
 let fL=null;
