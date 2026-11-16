@@ -523,6 +523,10 @@ def set_env():                                            # live = ساعت وا
 def index(): return send_from_directory(HERE, "index.html")
 
 
+@app.get("/cinema.js")
+def cinema_js(): return send_from_directory(HERE, "cinema.js", mimetype="application/javascript")
+
+
 @app.get("/admin")
 def admin_page(): return send_from_directory(HERE, "admin.html")
 

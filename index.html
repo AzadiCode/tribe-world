@@ -91,7 +91,7 @@ const MOB0=innerWidth<820||matchMedia('(pointer:coarse)').matches;let PRX=Math.m
 R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=.92;document.body.prepend(R.domElement);
 const scene=new THREE.Scene();scene.fog=new THREE.Fog(0xc9d6c4,48,150);
 const cam=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.5,300);const HOME=new THREE.Vector3(15,20,19);cam.position.set(46,52,56);
-const ctl=new OrbitControls(cam,R.domElement);Object.assign(ctl,{enableDamping:true,maxPolarAngle:1.2,minPolarAngle:.35,minDistance:9,maxDistance:60,screenSpacePanning:false});
+const ctl=new OrbitControls(cam,R.domElement);Object.assign(ctl,{enableDamping:true,maxPolarAngle:1.2,minPolarAngle:.35,minDistance:9,maxDistance:60,screenSpacePanning:false});let CIN=null;
 const hemi=new THREE.HemisphereLight(0xdfeaff,0x6f8a55,.7);scene.add(hemi);const moon=new THREE.DirectionalLight(0x9fb4ff,0);scene.add(moon);
 const sun=new THREE.DirectionalLight(0xffe2b8,1.9);sun.position.set(-20,30,18);sun.castShadow=true;sun.shadow.mapSize.set(MOB0?1536:2048,MOB0?1536:2048);
 Object.assign(sun.shadow.camera,{left:-43,right:43,top:43,bottom:-43,near:5,far:90});sun.shadow.bias=-.0004;sun.shadow.normalBias=.06;scene.add(sun);
@@ -299,7 +299,7 @@ const DEF=['آرش','سارا','نیما','مینا','کیان','لیلا','پا
 const MODES={move:'✋ جابه‌جایی: ساختمان را بکش و رها کن',build:'🏗️ ساخت: روی زمین بزن (جاده و پیاده‌رو: بکش)',rot:'🔄 چرخش: روی ساختمان بزن',del:'🗑️ حذف: روی ساختمان بزن',name:'🏷️ نام مستعار: روی آدم بزن',say:'💬 پیام: روی آدم بزن'};
 // ── رابط
 document.body.insertAdjacentHTML('afterbegin','<div id="nts"></div>');
-document.body.insertAdjacentHTML('beforeend',`<div id="adm"><div class="btn e g" data-m="move" title="جابه‌جایی">✋</div><div class="btn e g" data-m="build" title="ساخت">🏗️</div><div class="btn e g" data-m="rot" title="چرخش">🔄</div><div class="btn e g" data-m="del" title="حذف">🗑️</div><div class="btn e g" data-m="name" title="نام مستعار">🏷️</div><div class="btn e g" data-m="say" title="پیام">💬</div><div class="btn e g" id="brec" title="ضبط ویدیو (فقط تصویر سه‌بعدی)">🎥</div><div class="btn e g" id="brec2" title="ضبط با رابط: منابع، مکالمات، نام و حرف شهروندان (کامپیوتر) · کلید F8">🎬</div><div class="btn e g" id="btm" title="زمان">⏱️</div></div><div id="pal" class="g"><span data-t="house" class="on">🏠</span><span data-t="hq">🏢</span><span data-t="farm">🌾</span><span data-t="market">🏪</span><span data-t="road">🛣️</span><span data-t="path" title="پیاده‌رو">🚶</span><span data-t="tree">🌲</span><label><input type="checkbox" id="fr" checked> رایگان</label></div><div id="md" class="g"><p id="mt"></p><input id="mi" maxlength="120"><div><button id="mok">تأیید</button><button id="mno">انصراف</button></div></div>`);
+document.body.insertAdjacentHTML('beforeend',`<div id="adm"><div class="btn e g" data-m="move" title="جابه‌جایی">✋</div><div class="btn e g" data-m="build" title="ساخت">🏗️</div><div class="btn e g" data-m="rot" title="چرخش">🔄</div><div class="btn e g" data-m="del" title="حذف">🗑️</div><div class="btn e g" data-m="name" title="نام مستعار">🏷️</div><div class="btn e g" data-m="say" title="پیام">💬</div><div class="btn e g" id="brec" title="ضبط ویدیو (فقط تصویر سه‌بعدی)">🎥</div><div class="btn e g" id="brec2" title="استودیوی سینمایی: حرکت‌های آماده + ضبط (کامپیوتر و موبایل)">🎬</div><div class="btn e g" id="btm" title="زمان">⏱️</div></div><div id="pal" class="g"><span data-t="house" class="on">🏠</span><span data-t="hq">🏢</span><span data-t="farm">🌾</span><span data-t="market">🏪</span><span data-t="road">🛣️</span><span data-t="path" title="پیاده‌رو">🚶</span><span data-t="tree">🌲</span><label><input type="checkbox" id="fr" checked> رایگان</label></div><div id="md" class="g"><p id="mt"></p><input id="mi" maxlength="120"><div><button id="mok">تأیید</button><button id="mno">انصراف</button></div></div>`);
 $('side').insertAdjacentHTML('beforeend','<div id="bn" class="btn g" title="نمایش/پنهان نام‌ها"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.9 3.1-6.2 7-6.2s7 2.3 7 6.2"/></svg></div><div id="bm" class="btn g" title="قطع صدا"></div><div id="ba" class="btn g" title="ابزار مدیر"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg></div>');
 $('tier').insertAdjacentHTML('beforeend','<span id="clk"></span>');
 // ── جاده‌های متصل + چراغ خیابان
@@ -503,7 +503,8 @@ document.addEventListener('visibilitychange',()=>{if(!rec||rec.state==='inactive
 if(document.hidden){if(rec.state==='recording'){rec.pause();racc+=performance.now()-rt0;rt0=0}}else if(rec.state==='paused'){rec.resume();rt0=performance.now()}});
 addEventListener('beforeunload',e=>{if(rec&&rec.state!=='inactive'){e.preventDefault();e.returnValue=''}});
 $('brec').onclick=()=>RC.on?recStop():recStart();
-$('brec2').onclick=()=>rec?recStop():recStartUI();
+$('brec2').onclick=()=>CIN?CIN.toggle():(rec?recStop():recStartUI());
+import('/cinema.js').then(m=>{CIN=m.initCinema({cam,ctl,toast,center:()=>ctr,radius:()=>RAD,hq:()=>hqH,rec:{start:()=>(MOB0||!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia))?recStart():recStartUI(),stop:recStop,on:()=>!!rec}})}).catch(e=>console.warn('cinema',e));
 addEventListener('keydown',e=>{if(e.key==='F8'){e.preventDefault();rec?recStop():recStartUI()}});
 // ── ظاهر بنیان‌گذار: هکر نئونی (پالتوی تاریک، گاگل، چشم سبز، دورخط درخشان)
 let fL=null;
@@ -844,6 +845,6 @@ for(const g of objs.values())if(g.userData.sw!==undefined)g.rotation.z=Math.sin(
 for(const g of objs.values()){const u=g.userData;if(u.t<1){u.t=Math.min(1,u.t+dt*1.8);const e=1-Math.pow(1-u.t,3);g.scale.setScalar(Math.max(.01,e*(1+.12*Math.sin(u.t*Math.PI))))}}
 if(!document.hidden){fpsA+=(Math.min(120,1/Math.max(dt,.001))-fpsA)*.05;if((warm-=dt)<=0&&(fpsT-=dt)<=0){fpsT=1.5;tune()}}
 stepCits(dt,t);stepCars(dt,t);
-ctl.target.x=Math.max(-34,Math.min(34,ctl.target.x));ctl.target.z=Math.max(-34,Math.min(34,ctl.target.z));ctl.update();if(INST){try{fillInst(dt)}catch(e){console.error(e);killInst()}}R.render(scene,cam)});
+if(CIN)CIN.step(dt);ctl.target.x=Math.max(-34,Math.min(34,ctl.target.x));ctl.target.z=Math.max(-34,Math.min(34,ctl.target.z));ctl.update();if(INST){try{fillInst(dt)}catch(e){console.error(e);killInst()}}R.render(scene,cam)});
 </script>
 </body></html>
