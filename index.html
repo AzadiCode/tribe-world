@@ -12,17 +12,18 @@ canvas{display:block;touch-action:none}svg{width:100%;height:100%;display:block}
 .g{background:var(--glass);backdrop-filter:blur(8px) saturate(1.3);-webkit-backdrop-filter:blur(8px) saturate(1.3);border:1px solid var(--line);box-shadow:0 3px 10px rgba(4,20,22,.3),inset 0 1px 0 rgba(255,255,255,.07)}
 #hud{position:fixed;inset:0;pointer-events:none;padding:max(6px,env(safe-area-inset-top)) 6px max(6px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center}
 #res{display:flex;gap:4px;width:100%;max-width:300px}
-.chip{flex:1;position:relative;height:26px;border-radius:var(--r);padding:0 5px;display:flex;align-items:center;gap:5px;min-width:0}
-.chip .ic,#quest .fl{flex:none;width:14px;height:14px;color:var(--cream);opacity:.88}.chip .ic svg,#quest .fl svg{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.chip .tx{min-width:0;display:flex;flex-direction:column}.chip b{font-size:11px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap}.chip small{font-size:8px;opacity:.65;line-height:1.1;white-space:nowrap}
-.chip .d{position:absolute;top:-3px;inset-inline-end:6px;font-size:9px;font-weight:800;color:var(--jade);animation:fl 1.6s ease-out forwards}
+.chip{flex:1;position:relative;height:30px;border-radius:var(--r);padding:0 7px;display:flex;align-items:center;justify-content:flex-start;gap:4px;min-width:0}
+.chip .ic{flex:none;width:17px;height:17px;color:var(--a)}
+#quest .fl{flex:none;width:14px;height:14px;color:var(--cream);opacity:.88}.chip .ic svg,#quest .fl svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.chip .tx{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.chip b{font-size:14px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--cream)}.chip small{font-size:7.5px;opacity:.55;line-height:1.1;white-space:nowrap}
+.chip .d{position:absolute;top:-7px;inset-inline-end:8px;font-size:9.5px;font-weight:800;color:var(--jade);text-shadow:0 1px 3px rgba(0,0,0,.45);animation:fl 1.6s ease-out forwards}
 @keyframes fl{to{transform:translateY(-12px);opacity:0}}
-#rect{position:fixed;left:50%;transform:translateX(-50%);top:calc(max(6px,env(safe-area-inset-top)) + 62px);z-index:5;display:none;padding:3px 10px;border-radius:var(--r);font-size:10.5px;font-weight:800;color:#ff7a6b;font-variant-numeric:tabular-nums;pointer-events:none}#rect.on{display:block}#brec.rec{outline:1.5px solid #ff4d3d;background:rgba(255,77,61,.28);animation:rp 1.2s infinite}@keyframes rp{50%{opacity:.55}}
+#rect{position:fixed;left:50%;transform:translateX(-50%);top:calc(max(6px,env(safe-area-inset-top)) + 66px);z-index:5;display:none;padding:3px 10px;border-radius:var(--r);font-size:10.5px;font-weight:800;color:#ff7a6b;font-variant-numeric:tabular-nums;pointer-events:none}#rect.on{display:block}#brec.rec{outline:1.5px solid #ff4d3d;background:rgba(255,77,61,.28);animation:rp 1.2s infinite}@keyframes rp{50%{opacity:.55}}
 #tier{margin-top:5px;display:flex;align-items:center;gap:7px;padding:3px 9px;border-radius:var(--r)}
 #tier h1{margin:0;font-size:10.5px;font-weight:800;color:var(--gold)}
 #path{display:flex;align-items:center;direction:ltr}#path i{width:5px;height:5px;border-radius:50%;background:#fff3d633}#path i.on{background:var(--gold);box-shadow:0 0 0 2px #ffc24744}#path i.past{background:var(--jade)}#path u{width:8px;height:1.5px;background:#fff3d633}
 #clk{font-size:9.5px;opacity:.85;white-space:nowrap;display:inline-flex;align-items:center;gap:3px}#clk svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-#toast{position:absolute;top:64px;padding:5px 10px;border-radius:var(--r);font-size:10.5px;max-width:92%;text-align:center;opacity:0;transform:translateY(-6px);transition:.35s}#toast.on{opacity:1;transform:none}
+#toast{position:absolute;top:68px;padding:5px 10px;border-radius:var(--r);font-size:10.5px;max-width:92%;text-align:center;opacity:0;transform:translateY(-6px);transition:.35s}#toast.on{opacity:1;transform:none}
 #side{position:fixed;inset-inline-start:6px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:4px;pointer-events:auto}
 .btn{position:relative;width:26px;height:26px;border-radius:var(--r);padding:6px;color:var(--cream);cursor:pointer;border:1px solid var(--line)}.btn:after{content:'';position:absolute;inset:-3px}.btn:active{transform:scale(.94)}.btn.dim{opacity:.5}
 #bot{margin-top:auto;width:100%;max-width:300px;display:flex;flex-direction:column;gap:4px}
@@ -305,13 +306,28 @@ q(2,2,0,0,0xb9b3a4,.06);q(1.3,1.3,0,0,ASP);
 if(cr){const zb=(w,d,x,z)=>q(w,d,x,z,0xefe9d6,.095);for(let i=-2;i<=2;i++){if(cr&1)zb(.09,1,i*.2,0);if(cr&2)zb(1,.09,0,i*.2)}}
 if(lamp){const p=new THREE.Mesh(new THREE.CylinderGeometry(.025,.035,1.1,5),M(0x2f3338));p.position.set(.82,.55,.82);p.castShadow=true;g.add(p);const bl=new THREE.Mesh(new THREE.SphereGeometry(.09,8,6),LAMP);bl.position.set(.82,1.12,.82);g.add(bl);const pl=NORAY(new THREE.Mesh(LPG,LP));pl.rotation.x=-Math.PI/2;pl.position.set(.55,.12,.55);g.add(pl);const hl=NORAY(new THREE.Sprite(LHALO));hl.scale.set(1,1,1);hl.position.set(.82,1.12,.82);g.add(hl)}}
 // ── پیاده‌رو: نیمِ عرض خیابان، ساده و خاکی (عرض ۱ در برابر ۲ خانهٔ جاده)
-const PBG=new THREE.IcosahedronGeometry(.035,0),DIRT=[0xb09366,0xa88b5f,0xb89d70],DKP=[0x96794f,0x8a6f48],PBC=[0x8f8a80,0x7d786e,0xa39d90];
-function pathMesh(g,m,id){[...g.children].forEach(c=>g.remove(c));const H0=.03,hw=PW/2,ln=1-hw,q=(w,d,x,z,c,h=H0)=>{const e=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c,1));e.position.set(x,h/2,z);e.receiveShadow=true;g.add(e)},base=DIRT[((id%3)+3)%3];
+const PBG=new THREE.IcosahedronGeometry(.03,0),DIRT=[0xb09366,0xaa8f63,0xb59a6c],PBC=[0x8f8a80,0x7d786e,0xa39d90],RIM=[0x8b8f52,0x93915a,0x868a4f],RR=.05,RG={},RSG=new THREE.SphereGeometry(RR,8,6);
+const rimG=l=>RG[l]||(RG[l]=new THREE.CylinderGeometry(RR,RR,l,8,1));
+function pathMesh(g,m,id){[...g.children].forEach(c=>g.remove(c));const H0=.03,hw=PW/2,ln=1-hw,q=(w,d,x,z,c,h=H0)=>{const e=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c,1));e.position.set(x,h/2,z);e.receiveShadow=true;g.add(e)},base=DIRT[((id%3)+3)%3],rc=RIM[((id%3)+3)%3];
+// خاکِ ساده؛ فقط تا لبهٔ همسایه امتداد می‌یابد (هرگز به خانه/ساختمان وصل نمی‌شود)
 q(PW,PW,0,0,base);
-[[1,0,-1,PW,ln],[2,1,0,ln,PW],[4,0,1,PW,ln],[8,-1,0,ln,PW]].forEach(([bit,dx,dz,w,d])=>{if(m&bit)q(w,d,dx*(hw+ln/2),dz*(hw+ln/2),base)});
+const B=[1,2,4,8],DX=[0,1,0,-1],DZ=[-1,0,1,0];
+B.forEach((bit,i)=>{if(m&bit)q(DX[i]?ln:PW,DZ[i]?ln:PW,DX[i]*(hw+ln/2),DZ[i]*(hw+ln/2),base)});
+// لبهٔ برجستهٔ نرم (بینِ خاک و چمن): فقط کنار ضلع‌های باز، با نیم‌استوانه + گوی در گوشه‌ها
+const rim=(len,x,z,alongX)=>{const e=new THREE.Mesh(rimG(len),M(rc,1));e.position.set(x,H0,z);if(alongX)e.rotation.z=Math.PI/2;e.castShadow=false;e.receiveShadow=true;g.add(e)},ball=(x,z)=>{const e=new THREE.Mesh(RSG,M(rc,1));e.position.set(x,H0,z);e.receiveShadow=true;g.add(e)};
+const has=i=>!!(m&B[i]);
+// ضلع‌های باز مرکز: بالا(0) راست(1) پایین(2) چپ(3)
+if(!has(0))rim(PW,0,-hw,1);if(!has(2))rim(PW,0,hw,1);if(!has(1))rim(PW,hw,0,0);if(!has(3))rim(PW,-hw,0,0);
+// دو لبهٔ کنار هر بازو
+if(has(0)){rim(ln,-hw,-hw-ln/2,0);rim(ln,hw,-hw-ln/2,0)}
+if(has(2)){rim(ln,-hw,hw+ln/2,0);rim(ln,hw,hw+ln/2,0)}
+if(has(1)){rim(ln,hw+ln/2,-hw,1);rim(ln,hw+ln/2,hw,1)}
+if(has(3)){rim(ln,-hw-ln/2,-hw,1);rim(ln,-hw-ln/2,hw,1)}
+// گوی در چهار گوشهٔ مرکز اگر لبه‌ای به آن می‌رسد
+[[-1,-1,0,3],[1,-1,0,1],[-1,1,2,3],[1,1,2,1]].forEach(([sx,sz,vz,hx])=>{const rz=!has(vz)||has(sx<0?3:1),rx=!has(hx)||has(sz<0?0:2);if(rz||rx)ball(sx*hw,sz*hw)});
+// دو سنگ‌ریزهٔ ریز، فقط برای جان‌دادن
 let sd=(id*9301+49297)%233280;const r=()=>(sd=(sd*9301+49297)%233280)/233280;
-for(let i=0;i<3;i++)q(.2+r()*.26,.16+r()*.22,(r()-.5)*.4,(r()-.5)*.4,DKP[i&1],H0+.005);
-for(let i=0;i<4;i++){const e=new THREE.Mesh(PBG,M(PBC[i%3],1));e.position.set((r()-.5)*.8,H0+.008,(r()-.5)*.8);e.scale.set(1,.55,1);e.rotation.y=r()*3;g.add(e)}}
+for(let i=0;i<2;i++){const e=new THREE.Mesh(PBG,M(PBC[i%3],1));e.position.set((r()-.5)*.55,H0+.006,(r()-.5)*.55);e.scale.set(1,.5,1);e.rotation.y=r()*3;g.add(e)}}
 function roads(w){const rs=new Set(),ps=new Set();for(const b of w.buildings){if(b.type==='road')rs.add(b.x+','+b.z);else if(b.type==='path')ps.add(b.x+','+b.z)}
 const hr=(x,z)=>rs.has(x+','+z),hq=(x,z)=>ps.has(x+','+z),hc=(x,z)=>hr(x,z)||hq(x,z);
 for(const b of w.buildings){if(b.type!=='road'&&b.type!=='path')continue;const g=objs.get(b.id);if(!g)continue;
@@ -724,9 +740,9 @@ if(!bl)for(const o of cars)if(o!==c&&ck(o.g.position.x,o.g.position.z,.95,.38)){
 c.stuck=bl?c.stuck+dt:0;c.v+=((!bl||c.stuck>5?c.sp:0)-c.v)*Math.min(1,dt*4);
 g.position.x+=cs*c.v*dt;g.position.z-=sn*c.v*dt;g.position.y=.06+(c.v>.2?Math.sin(t*18+i)*.004:0);g.rotation.y=c.hd}}
 let rev=-1,seenEv=null,tmT;const tgt={pop:0,money:0,food:0},disp={pop:0,money:0,food:0},last={};
-const IC={pop:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.4"/><path d="M5.5 20c.6-3.8 3.2-6 6.5-6s5.9 2.2 6.5 6"/></svg>',money:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.6"/></svg>',food:'<svg viewBox="0 0 24 24"><path d="M12 21V8.5M12 8.5C10.6 7.4 10.2 5.8 10.2 4c1.4 1 1.8 2.6 1.8 4.5zM12 8.5c1.4-1.1 1.8-2.7 1.8-4.5-1.4 1-1.8 2.6-1.8 4.5zM12 13.5c-2.6 0-4-1.6-4-4 2.6 0 4 1.6 4 4zM12 13.5c2.6 0 4-1.6 4-4-2.6 0-4 1.6-4 4zM12 18c-2.6 0-4-1.6-4-4 2.6 0 4 1.6 4 4zM12 18c2.6 0 4-1.6 4-4-2.6 0-4 1.6-4 4z"/></svg>',flag:'<svg viewBox="0 0 24 24"><path d="M6 21V4M6 5c4-2 6 2 12 0v8c-6 2-8-2-12 0"/></svg>'};
+const IC={pop:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.1"/><path d="M3.4 19.5c.5-3.6 2.7-5.5 5.6-5.5s5.1 1.9 5.6 5.5"/><circle cx="17.2" cy="9.6" r="2.4"/><path d="M16.2 14.2c2.6-.1 4.2 1.5 4.6 4.8"/></svg>',money:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v10M9.6 10c0-1 1-1.7 2.4-1.7s2.4.7 2.4 1.7c0 2.3-4.8 1.3-4.8 3.7 0 1 1 1.7 2.4 1.7s2.4-.7 2.4-1.7"/></svg>',food:'<svg viewBox="0 0 24 24"><path d="M12 21V8.5M12 8.5C10.6 7.4 10.2 5.8 10.2 4c1.4 1 1.8 2.6 1.8 4.5zM12 8.5c1.4-1.1 1.8-2.7 1.8-4.5-1.4 1-1.8 2.6-1.8 4.5zM12 13.5c-2.6 0-4-1.6-4-4 2.6 0 4 1.6 4 4zM12 13.5c2.6 0 4-1.6 4-4-2.6 0-4 1.6-4 4zM12 18c-2.6 0-4-1.6-4-4 2.6 0 4 1.6 4 4zM12 18c2.6 0 4-1.6 4-4-2.6 0-4 1.6-4 4z"/></svg>',flag:'<svg viewBox="0 0 24 24"><path d="M6 21V4M6 5c4-2 6 2 12 0v8c-6 2-8-2-12 0"/></svg>'};
 const RS=[['pop','جمعیت','نفر','linear-gradient(145deg,#4be8a8,#12a06b)',0],['money','خزانه','میلیون تومان','linear-gradient(145deg,#ffd36b,#e89a14)',1],['food','غذا','کیلوگرم','linear-gradient(145deg,#ffa36b,#e5562a)',0]];
-$('res').innerHTML=RS.map(([k,a,u,bg])=>`<div class="chip g" id="c_${k}"><div class="ic">${IC[k]}</div><div class="tx"><b id="v_${k}">۰</b><small>${u}</small></div></div>`).join('');
+$('res').innerHTML=RS.map(([k,a,u,bg])=>`<div class="chip g" id="c_${k}" style="--a:${({pop:'#3ddc97',money:'#ffc247',food:'#ff8a4c'})[k]}"><div class="ic">${IC[k]}</div><div class="tx"><b id="v_${k}">۰</b><small>${u}</small></div></div>`).join('');
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(tmT);tmT=setTimeout(()=>e.classList.remove('on'),4500)}
 function bump(k,d){const e=document.createElement('span');e.className='d';e.textContent=(d>0?'+':'')+fa(d,k==='money'?1:0);$('c_'+k).appendChild(e);setTimeout(()=>e.remove(),1600)}
 function sync(w){W=w;rev=w.rev;const ids=new Set(w.buildings.map(b=>b.id));
