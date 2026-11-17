@@ -35,7 +35,7 @@ const ro=new THREE.Group();ro.position.y=.94;g.add(ro);
 for(const s of[-1,1]){slab(ro,1.25,.05,1.5,rc,s*.46,.18,-s*Math.PI/4);for(const d of[.4,.78,1.1])slab(ro,.07,.025,1.52,rd,s*(d*.707+.028),.6-d*.707+.028,-s*Math.PI/4)}
 bx(ro,.12,.06,1.54,rd,0,.57,0);gable(ro,1.2,.6,.06,wc,0).position.z=.44;gable(ro,1.2,.6,.06,wc,0).position.z=-.5;
 bx(ro,.16,.66,.16,0x8b8378,.42,-.1,-.2);bx(ro,.22,.05,.22,0x5f5a52,.42,.56,-.2);
-Object.assign(g.userData,{roof:ro,walls:wl});bake(ro);bake(wl);bake(g);
+Object.assign(g.userData,{roof:ro,walls:wl,ry:.94,rl:1.7});bake(ro);bake(wl);bake(g);
 const hg=NORAY(new THREE.Mesh(HPG,HP));hg.rotation.x=-Math.PI/2;hg.position.set(0,.16,.95);g.add(hg)},
 farm(g){bx(g,1.9,.06,1.9,0x6e4a30);for(let i=-2;i<=2;i++){bx(g,1.6,.1,.2,0x5a3d28,0,.06,i*.34);for(let j=-3;j<=3;j++)ball(g,.1,[0x86b84e,0xa6c24a,0x6fa648][(i+j+9)%3],j*.24,.2,i*.34,0)}
 cyl(g,.03,.03,.6,0x6b4a2b,.8,.06,.8,5);bx(g,.4,.04,.04,0x6b4a2b,.8,.5,.8);ball(g,.07,0xe3c78a,.8,.7,.8,0);cyl(g,.1,.1,.03,0x8a6a45,.8,.74,.8,8)},
@@ -47,19 +47,25 @@ path(g,b){pathMesh(g,0,b.id,[.5,.5,.5,.5],0)},
 hq(g){
 const ST=M(0xcfc9ba,.95),WL=M(0xe9e3d4,.85),DK=M(0x2c323a,.55),WD=M(0x8a5a35,.7),RF=M(0xf3efe6,.6),LW=M(0x7fa46a,1),PL=M(0x2f7a4a,.9),GO=M(0xd9b45a,.35),PT=M(0xe9e2cf,.95);
 hb(g,1.9,.08,1.84,ST,0,0,.05);hb(g,1.76,.02,1.7,LW,0,.08,.05);
-hb(g,1.54,.06,1.04,DK,0,.1,-.25);hb(g,1.5,.6,1,WL,0,.16,-.25);
-[-.56,-.3,.3,.56].forEach(x=>hb(g,.22,.38,.03,HQGL,x,.2,.25));
-hb(g,.34,.5,.03,DK,0,.16,.245);hb(g,.26,.44,.04,WD,0,.16,.26);hb(g,.025,.12,.03,GO,.09,.3,.285);
-[-.77,.77].forEach(x=>hb(g,.03,.3,.5,HQGL,x,.24,-.25));
-hb(g,1.72,.56,1.1,DK,0,.76,-.2);
-hb(g,1.52,.38,.03,HQGL,0,.85,.35);[-.5,-.25,0,.25,.5].forEach(x=>hb(g,.025,.38,.04,DK,x,.85,.355));
-[-.87,.87].forEach(x=>hb(g,.03,.3,.7,HQGL,x,.88,-.2));
-hb(g,1.86,.06,1.26,RF,0,1.32,-.2);hb(g,1.86,.022,.022,GLm,0,1.298,.44);
-hb(g,1.5,.15,.02,HQGL,0,1.38,.3);hb(g,.02,.15,.5,HQGL,-.75,1.38,.05);hb(g,.02,.15,.5,HQGL,.75,1.38,.05);
-[-.5,.5].forEach(x=>{hb(g,.3,.09,.14,WD,x,1.38,.16);ball(g,.09,0x5f9f55,x-.07,1.52,.16);ball(g,.07,0x4f8f4a,x+.07,1.5,.16)});
-[[-.6,-.55],[.6,-.55],[-.6,-.1],[.6,-.1]].forEach(([x,z])=>cyl(g,.014,.014,.36,0x2c323a,x,1.38,z,5));hb(g,1.3,.025,.5,WD,0,1.74,-.33);
-hb(g,.4,.28,.32,DK,.55,1.38,-.55);
-const em=new THREE.Group();em.position.set(0,1.62,-.15);const rg=new THREE.Mesh(new THREE.TorusGeometry(.14,.025,8,20),GLm);rg.position.y=.14;em.add(rg);const dc=new THREE.Mesh(new THREE.CircleGeometry(.115,16),GDm);dc.position.y=.14;em.add(dc);const dc2=dc.clone();dc2.rotation.y=Math.PI;em.add(dc2);hb(em,.05,.14,.05,DK,0,0,0);g.add(em);hqDish=em;
+hb(g,1.54,.06,1.04,DK,0,.1,-.25);hb(g,1.44,.02,.94,M(0x6f7b86,.9),0,.16,-.25);
+// طبقهٔ همکف توخالی (گروه W0: در نمای داخل کوتاه می‌شود) + شیشه‌ها و در
+const W0=new THREE.Group();W0.position.y=.16;g.add(W0);
+hb(W0,1.5,.6,.06,WL,0,0,-.72);hb(W0,1.5,.6,.06,WL,0,0,.22);hb(W0,.06,.6,.88,WL,-.72,0,-.25);hb(W0,.06,.6,.88,WL,.72,0,-.25);
+[-.56,-.3,.3,.56].forEach(x=>hb(W0,.22,.38,.03,HQGL,x,.04,.25));
+hb(W0,.34,.5,.03,DK,0,0,.245);hb(W0,.26,.44,.04,WD,0,0,.26);hb(W0,.025,.12,.03,GO,.09,.14,.285);
+[-.77,.77].forEach(x=>hb(W0,.03,.3,.5,HQGL,x,.08,-.25));
+// طبقهٔ بالا + بام + تراس (گروه U: مثل سقف خانه‌ها بالا می‌رود؛ y محلی = y قبلی − ۰٫۷۶)
+const U=new THREE.Group();U.position.y=.76;g.add(U);
+hb(U,1.72,.56,1.1,DK,0,0,-.2);
+hb(U,1.52,.38,.03,HQGL,0,.09,.35);[-.5,-.25,0,.25,.5].forEach(x=>hb(U,.025,.38,.04,DK,x,.09,.355));
+[-.87,.87].forEach(x=>hb(U,.03,.3,.7,HQGL,x,.12,-.2));
+hb(U,1.86,.06,1.26,RF,0,.56,-.2);hb(U,1.86,.022,.022,GLm,0,.538,.44);
+hb(U,1.5,.15,.02,HQGL,0,.62,.3);hb(U,.02,.15,.5,HQGL,-.75,.62,.05);hb(U,.02,.15,.5,HQGL,.75,.62,.05);
+[-.5,.5].forEach(x=>{hb(U,.3,.09,.14,WD,x,.62,.16);ball(U,.09,0x5f9f55,x-.07,.76,.16);ball(U,.07,0x4f8f4a,x+.07,.74,.16)});
+[[-.6,-.55],[.6,-.55],[-.6,-.1],[.6,-.1]].forEach(([x,z])=>cyl(U,.014,.014,.36,0x2c323a,x,.62,z,5));hb(U,1.3,.025,.5,WD,0,.98,-.33);
+hb(U,.4,.28,.32,DK,.55,.62,-.55);
+Object.assign(g.userData,{roof:U,walls:W0,ry:.76,rl:2.1});
+const em=new THREE.Group();em.position.set(0,.86,-.15);const rg=new THREE.Mesh(new THREE.TorusGeometry(.14,.025,8,20),GLm);rg.position.y=.14;em.add(rg);const dc=new THREE.Mesh(new THREE.CircleGeometry(.115,16),GDm);dc.position.y=.14;em.add(dc);const dc2=dc.clone();dc2.rotation.y=Math.PI;em.add(dc2);hb(em,.05,.14,.05,DK,0,0,0);U.add(em);hqDish=em;
 hb(g,.82,.04,.4,WL,0,.66,.42);[-.36,.36].forEach(x=>cyl(g,.025,.025,.5,0xf1ece0,x,.1,.6,8));
 [-.18,.18].forEach(x=>{const lb=new THREE.Mesh(new THREE.SphereGeometry(.03,8,6),LAMP);lb.position.set(x,.64,.5);g.add(lb)});
 hb(g,.76,.03,.44,ST,0,.08,.5);hb(g,.6,.03,.3,PT,0,.11,.46);hb(g,.22,.012,.32,PT,0,.08,.82);
