@@ -15,18 +15,17 @@ function pathMesh(g,m,id,L,bl=0){[...g.children].forEach(c=>g.remove(c));const H
 // خاکِ ساده؛ بازوها به پیاده‌رو/جاده و به ورودی ساختمان‌ها می‌رسند
 q(PW,PW,0,0,base);
 const B=[1,2,4,8],DX=[0,1,0,-1],DZ=[-1,0,1,0];
-B.forEach((bit,i)=>{if(m&bit)q(DX[i]?L[i]:PW,DZ[i]?L[i]:PW,DX[i]*(hw+L[i]/2),DZ[i]*(hw+L[i]/2),base)});
+// بازوی منتهی به ساختمان به‌اندازهٔ کل خانه پهن می‌شود (CELL) تا بین ساختمان‌های ردیفی چمن خالی نماند
+B.forEach((bit,i)=>{if(!(m&bit))return;if(bl&bit){const l=hw+L[i];q(DX[i]?l:CELL,DZ[i]?l:CELL,DX[i]*l/2,DZ[i]*l/2,base)}else q(DX[i]?L[i]:PW,DZ[i]?L[i]:PW,DX[i]*(hw+L[i]/2),DZ[i]*(hw+L[i]/2),base)});
 // لبهٔ برجستهٔ نرم (بینِ خاک و چمن): نیم‌استوانهٔ خوابیده + گوی در گوشه‌ها
 const rim=(len,x,z,alongX)=>{const e=new THREE.Mesh(rimG(len),M(rc,1));e.position.set(x,H0,z);if(alongX)e.rotation.z=Math.PI/2;else e.rotation.x=Math.PI/2;e.receiveShadow=true;g.add(e)},ball=(x,z)=>{const e=new THREE.Mesh(RSG,M(rc,1));e.position.set(x,H0,z);e.receiveShadow=true;g.add(e)};
-const has=i=>!!(m&B[i]);
+const has=i=>!!(m&B[i]),wd=i=>!!(bl&B[i]);   // wd: بازوی پهن (منتهی به ساختمان)
 if(!has(0))rim(PW,0,-hw,1);if(!has(2))rim(PW,0,hw,1);if(!has(1))rim(PW,hw,0,0);if(!has(3))rim(PW,-hw,0,0);
-if(has(0)){rim(L[0],-hw,-hw-L[0]/2,0);rim(L[0],hw,-hw-L[0]/2,0)}
-if(has(2)){rim(L[2],-hw,hw+L[2]/2,0);rim(L[2],hw,hw+L[2]/2,0)}
-if(has(1)){rim(L[1],hw+L[1]/2,-hw,1);rim(L[1],hw+L[1]/2,hw,1)}
-if(has(3)){rim(L[3],-hw-L[3]/2,-hw,1);rim(L[3],-hw-L[3]/2,hw,1)}
-[[-1,-1,0,3],[1,-1,0,1],[-1,1,2,3],[1,1,2,1]].forEach(([sx,sz,vz,hx])=>{const rz=!has(vz)||has(sx<0?3:1),rx=!has(hx)||has(sz<0?0:2);if(rz||rx)ball(sx*hw,sz*hw)});
-// سرِ لبه‌ها کنار ساختمان گرد شود
-for(let i=0;i<4;i++)if(bl&B[i]){const e=hw+L[i];if(DX[i]){ball(DX[i]*e,-hw);ball(DX[i]*e,hw)}else{ball(-hw,DZ[i]*e);ball(hw,DZ[i]*e)}}
+if(has(0)&&!wd(0)){if(!wd(3))rim(L[0],-hw,-hw-L[0]/2,0);if(!wd(1))rim(L[0],hw,-hw-L[0]/2,0)}
+if(has(2)&&!wd(2)){if(!wd(3))rim(L[2],-hw,hw+L[2]/2,0);if(!wd(1))rim(L[2],hw,hw+L[2]/2,0)}
+if(has(1)&&!wd(1)){if(!wd(0))rim(L[1],hw+L[1]/2,-hw,1);if(!wd(2))rim(L[1],hw+L[1]/2,hw,1)}
+if(has(3)&&!wd(3)){if(!wd(0))rim(L[3],-hw-L[3]/2,-hw,1);if(!wd(2))rim(L[3],-hw-L[3]/2,hw,1)}
+[[-1,-1,0,3],[1,-1,0,1],[-1,1,2,3],[1,1,2,1]].forEach(([sx,sz,vz,hx])=>{if(wd(vz)||wd(hx))return;const rz=!has(vz)||has(sx<0?3:1),rx=!has(hx)||has(sz<0?0:2);if(rz||rx)ball(sx*hw,sz*hw)});
 let sd=(id*9301+49297)%233280;const r=()=>(sd=(sd*9301+49297)%233280)/233280;
 for(let i=0;i<2;i++){const e=new THREE.Mesh(PBG,M(PBC[i%3],1));e.position.set((r()-.5)*.55,H0+.006,(r()-.5)*.55);e.scale.set(1,.5,1);e.rotation.y=r()*3;g.add(e)}}
 function roads(w){const rs=new Set(),ps=new Set();for(const b of w.buildings){if(b.type==='road')rs.add(b.x+','+b.z);else if(b.type==='path')ps.add(b.x+','+b.z)}
