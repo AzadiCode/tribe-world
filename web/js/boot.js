@@ -39,4 +39,4 @@ const load=name=>new Promise((ok,bad)=>{
   document.head.appendChild(s);
 });
 
-for(const f of GAME_FILES) await load(f);
+try{for(const f of GAME_FILES) await load(f)}catch(e){const m=document.getElementById('ldm');if(m){m.textContent='خطا در بارگذاری: '+e.message+' — صفحه را رفرش کن';m.className='on'}throw e}
