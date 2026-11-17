@@ -43,7 +43,7 @@ market(g){bx(g,2,.06,1.4,0xb9ae96);for(let i=-1;i<=1;i++){const x=i*.66;bx(g,.55
 bx(g,.32,.06,.6,AWN[i+1],x-.16,.62);bx(g,.32,.06,.6,0xf2ead6,x+.16,.62);[-.26,.26].forEach(a=>[-.22,.22].forEach(c=>bx(g,.04,.56,.04,0x6b4a2b,x+a,.06,c)));
 for(let j=-1;j<=1;j++)ball(g,.07,[0xd94f3a,0xf0b13a,0x7cb342][(i+j+3)%3],x+j*.14,.53,0,0)}},
 road(g){roadMesh(g,0,0)},
-path(g,b){pathMesh(g,0,b.id,[.5,.5,.5,.5],0)},
+path(g,b){pathMesh(g,0,b.id,[.5,.5,.5,.5],0,b.x,b.z)},
 hq(g){
 const ST=M(0xcfc9ba,.95),WL=M(0xe9e3d4,.85),DK=M(0x2c323a,.55),WD=M(0x8a5a35,.7),RF=M(0xf3efe6,.6),LW=M(0x7fa46a,1),PL=M(0x2f7a4a,.9),GO=M(0xd9b45a,.35),PT=M(0xe9e2cf,.95);
 hb(g,1.9,.08,1.84,ST,0,0,.05);hb(g,1.76,.02,1.7,LW,0,.08,.05);
