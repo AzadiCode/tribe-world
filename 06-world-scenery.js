@@ -113,9 +113,9 @@ for(let i=0;i<110;i++){let bx=0,bz=0,tr=0;
 const inPond=(x,z)=>inRiver(x,z),occ=[]; // مستطیل‌های واقعی آیتم‌ها [x0,x1,z0,z1]
 const dm=new THREE.Object3D(),FP=[],fl=new THREE.InstancedMesh(new THREE.SphereGeometry(.08,6,5),new THREE.MeshStandardMaterial({roughness:.7}),260);
 for(let i=0;i<260;i++){FP.push([(rnd()-.5)*78,(rnd()-.5)*78]);fl.setColorAt(i,new THREE.Color(['#f3e9a6','#f4efe4','#e8a3b8','#b9a4e6'][i%4]))}scene.add(fl);
-const rocks=[];for(let i=0;i<22;i++){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.2+rnd()*.25,0),M(0x8c9088));r.position.set((rnd()-.5)*76,.14,(rnd()-.5)*76);r.scale.y=.7;r.castShadow=true;scene.add(r);rocks.push(r)}
+const rocks=[];for(let i=0;i<22;i++){const rx=(rnd()-.5)*76,rz=(rnd()-.5)*76,r=new THREE.Mesh(new THREE.DodecahedronGeometry(.2+rnd()*.25,0),M(0x8c9088));r.position.set(rx,.14+hgt(rx,rz),rz);r.scale.y=.7;r.castShadow=true;scene.add(r);rocks.push(r)}   // ارتفاع از زمینِ واقعی (کنار رود روی جالیِ ساحل)
 const hid=(x,z)=>inPond(x,z)||occ.some(r=>x>r[0]-.1&&x<r[1]+.1&&z>r[2]-.1&&z<r[3]+.1);
-function refreshDeco(){FP.forEach(([x,z],i)=>{dm.position.set(x,.08,z);dm.scale.setScalar(hid(x,z)?0:1);dm.updateMatrix();fl.setMatrixAt(i,dm.matrix)});fl.instanceMatrix.needsUpdate=true;rocks.forEach(r=>r.visible=!hid(r.position.x,r.position.z))}
+function refreshDeco(){FP.forEach(([x,z],i)=>{dm.position.set(x,hgt(x,z)+.08,z);dm.scale.setScalar(hid(x,z)?0:1);dm.updateMatrix();fl.setMatrixAt(i,dm.matrix)});fl.instanceMatrix.needsUpdate=true;rocks.forEach(r=>r.visible=!hid(r.position.x,r.position.z))}   // گل‌ها هم روی زمینِ واقعی (کنار رود دفن نشوند)
 for(let i=0;i<18;i++){const an=i/18*6.283,r=112+rnd()*14,h=16+rnd()*22,w=20+rnd()*16;const m=new THREE.Mesh(new THREE.ConeGeometry(w,h,6),M(i%3?0x6b8796:0x7a9a88,1));m.position.set(Math.cos(an)*r,h/2-1,Math.sin(an)*r);m.rotation.y=rnd()*3;scene.add(m);const c=new THREE.Mesh(new THREE.ConeGeometry(w*.32,h*.3,6),M(0xeef2f4,.9));c.position.set(m.position.x,h*.85-1,m.position.z);scene.add(c)}
 // ── تاب‌خوردن بادی جنگل (شیدری، بدون هزینهٔ CPU در هر فریم): uniforms مشترک WXF از موتور آب‌وهوا (06-world-weather.js)
 // هر فریم مقدار می‌گیرند (uWxT=زمان، uWxA=شدت از سرعت باد+گوست). خم‌شدن در فضای شیء و بر پایهٔ ارتفاعِ هر نمونه

@@ -18,7 +18,7 @@ function rebuildCarRoadGraph(){
  // سرِ چراغ روی «گوشهٔ پیاده‌رو» می‌نشیند (فاصلهٔ جانبی ۰٫۸۴ بیرون از آسفالت جادهٔ عرضی) نه روی جاده،
  // و ارتفاع از ۱٫۵۵ به ۱٫۱۳ کوتاه‌تر شد تا با مقیاس بازی هماهنگ باشد.
  for(const g of carSignals.values()){scene.remove(g);g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose()}})}carSignals.clear();
- for(const n of carRoadGraph)if(n.neighbors.length>=3&&n.b&&n.b.tl){const root=new THREE.Group();root.position.set(n.x,0,n.z);
+ for(const n of carRoadGraph)if(n.neighbors.length>=3&&n.b&&n.b.tl){const root=new THREE.Group();root.position.set(n.x,hgt(n.x,n.z),n.z);   // چراغ هم روی زمینِ واقعی بنشیند (کنار رود روی جالیِ ساحل)
   for(const e of n.neighbors){const d=[-e.dx,-e.dz],side=[-d[1],d[0]],h=new THREE.Group();h.position.set(-d[0]*.80+side[0]*.84,0,-d[1]*.80+side[1]*.84);h.rotation.y=Math.atan2(-d[0],-d[1]);
    const pole=new THREE.Mesh(new THREE.CylinderGeometry(.022,.036,.9,6),new THREE.MeshStandardMaterial({color:0x34383a,roughness:.8}));pole.position.y=.45;h.add(pole);
    const box=new THREE.Mesh(new THREE.BoxGeometry(.17,.36,.14),new THREE.MeshStandardMaterial({color:0x202326,roughness:.65}));box.position.set(0,1.02,0);h.add(box);
@@ -82,7 +82,7 @@ function spawnCar(){
  for(let attempt=0;attempt<12;attempt++){
   const node=rr(carRoadGraph),g=mkCar(),c={id:++carSerial,g,node,next:null,d:null,tx:0,tz:0,hd:0,v:0,dx:0,dz:0,twist:0,sp:1.45+Math.random()*.55,life:38+Math.random()*42,sc:0,stuck:0,out:0,turn:null};
   if(!pickNext(c))continue;const pos=carLanePoint(node,c.d);if(!carSpawnClear(pos.x,pos.z))continue;
-  c.dx=c.d[0];c.dz=c.d[1];g.scale.setScalar(.01);g.position.set(pos.x,.06,pos.z);c.hd=Math.atan2(-c.d[1],c.d[0]);scene.add(g);cars.push(c);return;
+  c.dx=c.d[0];c.dz=c.d[1];g.scale.setScalar(.01);g.position.set(pos.x,hgt(pos.x,pos.z)+.06,pos.z);c.hd=Math.atan2(-c.d[1],c.d[0]);scene.add(g);cars.push(c);return;
  }
 }
 function carBezier(turn,u){const v=1-u,p=turn.p0,a=turn.p1,b=turn.p2,q=turn.p3;
@@ -146,6 +146,6 @@ function stepCars(dt,t){
   }else{
    g.position.x+=vx*move;g.position.z+=vz*move;c.hd=Math.atan2(-vz,vx);
   }
-  g.position.y=.06+(c.v>.2?Math.sin(t*18+c.id)*.004:0);g.rotation.y=c.hd;
+  g.position.y=.06+hgt(g.position.x,g.position.z)+(c.v>.2?Math.sin(t*18+c.id)*.004:0);g.rotation.y=c.hd;   // ارتفاع = زمینِ واقعی + ۰٫۰۶ ثابتِ قبل ⇒ روی جادهٔ بلندشدهٔ ساحل هم هم‌تراز می‌ماند
  }
 }

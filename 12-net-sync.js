@@ -6,7 +6,7 @@ function sync(w){W=w;rev=w.rev;const ids=new Set(w.buildings.map(b=>b.id));
 for(const[id,g]of objs)if(!ids.has(id)){scene.remove(g);disposeObj(g);objs.delete(id)}
 for(const b of w.buildings){const g=objs.get(b.id);if(!g)addB(b,bpDelay(b.id));
  else if(b.type==='banner'&&g.userData.b.bn!==b.bn){scene.remove(g);disposeObj(g);objs.delete(b.id);addB(b,0)}   // متن بنر عوض شد ← مش با بافت تازه
- else if(g.userData.b.x!==b.x||g.userData.b.z!==b.z||g.userData.b.rot!==b.rot){g.position.set(b.x*U,0,b.z*U);if(b.type!=='road'&&b.type!=='path')g.rotation.y=b.rot*Math.PI/180;g.userData.b=b}}
+ else if(g.userData.b.x!==b.x||g.userData.b.z!==b.z||g.userData.b.rot!==b.rot){g.position.set(b.x*U,fpBaseY(b.type,b.x,b.z,b.rot),b.z*U);if(b.type!=='road'&&b.type!=='path')g.rotation.y=b.rot*Math.PI/180;g.userData.b=b}}   // هم‌ترازی با زمینِ واقعی (کنار رود) مثل addB
 plan.visible=!w.buildings.some(b=>b.type==='hq');
 // امضای ناوبری باید وضعیت چراغ راهنمایی (tl) و متن بنر (bn) را هم بگیرد وگرنه تغییر آن‌ها rebuildNav/roads را
 // زود می‌زند و چراغ‌های تازه اعمال‌شده تا رفرش کامل رسم نمی‌شوند (باگ گزارش‌شده).

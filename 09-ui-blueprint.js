@@ -15,7 +15,7 @@ const bpCompat=(a,b)=>a!==b;                                    // لایه‌ه
 const BP_RIVER=[[-146,22],[-96,22],[-96,6],[-40,6],[-40,24],[16,24],[16,4],[72,4],[72,18],[146,18]]; // مسیر شکستهٔ رود — هماهنگ با RIVER_PTS در 06-world-scenery.js (برای مستندات؛ اندازه‌گیری از filletDist)
 // حریم رود = فاصله تا مسیر «فِلِت‌شده» (filletDist در 06-world-scenery.js) — همان مرجعی که آب/ساحل رندر می‌شوند؛
 // هم‌بعد بودن گارد با رندر یعنی هیچ پیش‌نمایش سبزی داخل آب/ساحل پیچ‌ها تولید نمی‌شود (هم‌ساز با fpPondW).
-const bpInPond=(x,z)=>filletDist(x*U,z*U)<4.1;
+const bpInPond=(x,z)=>filletDist(x*U,z*U)<4.4;   // دقیقاً هم‌مرزِ fpPondW در 07-buildings-footprint.js (تا لبهٔ چمن ساحل)
 const inMap=(x,z)=>x>=-20*GRID&&x<20*GRID&&z>=-20*GRID&&z<20*GRID;
 // ── اعتبارسنجی لایه‌دار: خروجی true یا دلیل خطا (رشته). مجاورت هرگز خطا نیست؛ فقط همپوشانیِ هم‌لایه، برکه و خارج نقشه.
 let bpHit=null;
@@ -104,7 +104,7 @@ function bpMake(it,paint=true){const links=it.type==='path'&&!BP._batch?bpPathMa
   const mask=links?links.m:(it.type==='road'?bpMask(it.type,it.x,it.z):0);
   const g=bpClone(it.type,it.rot,mask,links,lamp,PATH_STYLE,cr);
   g.userData.it=it;
-  g.position.set(it.x*U,0,it.z*U);
+  g.position.set(it.x*U,fpBaseY(it.type,it.x,it.z,it.rot),it.z*U);   // نشستن روی زمین واقعی (کنار رود روی جالیِ ساحل)
   if(it.type!=='road'&&it.type!=='path')g.rotation.y=it.rot*Math.PI/180;
   scene.add(g);it.g=g;if(paint)bpPaint(it);return g}
 // رنگ حالت: سبز=معتبر · قرمز=نامعتبر · طلایی=انتخاب‌شده
@@ -128,7 +128,7 @@ function bpRemove(it){if(!it)return;if(it.g){scene.remove(it.g);disposeObj(it.g)
 function bpMove(it,x,z){const old={...it},others=W.buildings.concat(BP.items.filter(o=>o!==it)),rot=it.ar?bpAutoRot(it.type,x,z,it.rot,others):it.rot;
   if(it.x===x&&it.z===z&&it.rot===rot){bpPaint(it);return true}
   const val=bpVal(it.type,x,z,it,rot);if(val!==true){bpPaint(it);return false}
-  it.x=x;it.z=z;it.rot=rot;it.g.position.set(x*U,0,z*U);it.g.rotation.y=rot*Math.PI/180;bpRemesh(it,old);bpPaint(it);bpAfterChange();return true}
+  it.x=x;it.z=z;it.rot=rot;it.g.position.set(x*U,fpBaseY(it.type,x,z,rot),z*U);it.g.rotation.y=rot*Math.PI/180;bpRemesh(it,old);bpPaint(it);bpAfterChange();return true}
 function bpRot(it){if(it.type==='road'||it.type==='path')return;
   const old={...it};it.rot=(it.rot+90)%360;it.ar=false;it.g.rotation.y=it.rot*Math.PI/180;bpRemesh(it,old);bpPaint(it)}
 function bpAfterChange(){const all=W.buildings.concat(BP.items);let reoriented=false;
@@ -148,10 +148,10 @@ function bpRemesh(changed,old=changed){
     const m=links?links.m:bpMask(it.type,it.x,it.z),style=it.style==='dirt'?'dirt':'stone',sig=m+'|'+lamp+(it.type==='path'?'|'+style:'')+(it.type==='road'?'|'+cr:'');
     if(it.g&&it.g.userData.k!==sig){scene.remove(it.g);disposeObj(it.g);
       const g=bpClone(it.type,it.rot,m,links,lamp,it.style||'stone',cr);g.userData.it=it;
-      g.position.set(it.x*U,0,it.z*U);scene.add(g);it.g=g;bpPaint(it)}}}
+      g.position.set(it.x*U,fpBaseY(it.type,it.x,it.z,it.rot),it.z*U);scene.add(g);it.g=g;bpPaint(it)}}}
 // بازسازی دسته‌ای ماسک مسیرها؛ از اسکن تکراریِ صف برای هر قطعه جلوگیری می‌کند.
 function bpRemeshAll(){for(const it of BP.items){if(it.type!=='road'&&it.type!=='path')continue;const links=it.type==='path'?bpPathMask(it.x,it.z):null,lamp=it.type==='road'?(((it.x+it.z)%2+2)%2===0?1:0):0,cr=it.type==='road'?bpCrossMask(it.x,it.z):0,m=links?links.m:bpMask(it.type,it.x,it.z),style=it.style==='dirt'?'dirt':'stone',sig=m+'|'+lamp+(it.type==='path'?'|'+style:'')+(it.type==='road'?'|'+cr:'');
-  if(it.g&&it.g.userData.k!==sig){scene.remove(it.g);disposeObj(it.g);const g=bpClone(it.type,it.rot,m,links,lamp,it.style||'stone',cr);g.userData.it=it;g.position.set(it.x*U,0,it.z*U);scene.add(g);it.g=g}}}
+  if(it.g&&it.g.userData.k!==sig){scene.remove(it.g);disposeObj(it.g);const g=bpClone(it.type,it.rot,m,links,lamp,it.style||'stone',cr);g.userData.it=it;g.position.set(it.x*U,fpBaseY(it.type,it.x,it.z,it.rot),it.z*U);scene.add(g);it.g=g}}}
 // ── ردیف پیوستهٔ جاده/پیاده‌رو: افزودن دسته‌ای و فقط یک بازسازی اتصال/اعتبارسنجی در پایان.
 function bpStroke(x0,z0,x1,z1){const pts=[[x0,z0]],step=BP.type==='path'?FOOT.path[0]:GRID;let nx=Math.round((x1-x0)/step),nz=Math.round((z1-z0)/step),x=x0,z=z0;
   while(nx||nz){if(Math.abs(nx)>=Math.abs(nz)&&nx){x+=Math.sign(nx)*step;nx-=Math.sign(nx)}else if(nz){z+=Math.sign(nz)*step;nz-=Math.sign(nz)}pts.push([x,z])}
@@ -173,7 +173,7 @@ function bpFloat(c){const isTile=BP.type==='road'||BP.type==='path';
     if(BP.ghost){scene.remove(BP.ghost);disposeObj(BP.ghost)}
     BP.ghost=bpClone(BP.type,rot,mask,links,lamp,PATH_STYLE,cr);BP.ghost.userData.sig=sig;scene.add(BP.ghost)}
   const val=bpVal(BP.type,c[0],c[1],null,rot),ok=val===true;
-  BP.ghost.position.set(c[0]*U,0,c[1]*U);
+  BP.ghost.position.set(c[0]*U,fpBaseY(BP.type,c[0],c[1],rot),c[1]*U);   // شبح هم دقیقاً در ارتفاعِ نهایی بنشیند (پیش‌نمایش = نتیجه)
   if(!isTile)BP.ghost.rotation.y=rot*Math.PI/180;
   BP.ghost.userData.ring.material.color.setHex(ok?BP_OK:BP_BAD);
   BP.ghost.userData.tileMesh.material.color.setHex(ok?BP_OK:BP_BAD);

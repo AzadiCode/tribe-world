@@ -82,7 +82,7 @@ else if(c.fa)turn(c,Math.atan2(c.fa[0]-g.position.x,c.fa[1]-g.position.z),dt*4);
 else{if(c.ty==null)c.ty=g.rotation.y;if((c.lk-=dt)<=0){c.lk=1.5+Math.random()*3;c.ty=g.rotation.y+(Math.random()-.5)*2}turn(c,c.ty,dt*3)}
 if((c.dc=(c.dc||0)-dt)<=0){c.dc=1+Math.random();if(S==='stay'&&c.act!=='chat'&&c.tm>.8&&crowd(g.position.x,g.position.z)>=6)c.tm=.2+Math.random()}
 if((c.tm-=dt)<=0){if(c.act==='chat'&&p&&p.pt===c)p.tm=0;newGoal(c)}}
-if(c.hid)continue;g.position.y=c.by;
+if(c.hid)continue;g.position.y=hgt(g.position.x,g.position.z)+c.by;   // پایه = زمینِ واقعی (کنار رود روی جالیِ ساحل) + تپشِ قدم؛ در مرکزِ شهر زمین ۰ است ⇒ بدون تغییر
 if(c.rx>0){c.rx-=dt;const u=1.2-c.rx;g.position.y+=Math.max(0,Math.sin(u*Math.PI*3))*.28;c.aR.rotation.x=-2.7+Math.sin(u*22)*.5;c.aL.rotation.x=-2.7+Math.cos(u*22)*.5}}
 // فاصله‌گیری نرم با شبکهٔ فضایی (سریع حتی با صدها نفر) + ثبت تراکم
 GR.clear();for(const A of cits){if(A.hid||A.st==='enter'||A.st==='exit')continue;const k=Math.floor(A.g.position.x/1.2)*4096+Math.floor(A.g.position.z/1.2),l=GR.get(k);l?l.push(A):GR.set(k,[A])}

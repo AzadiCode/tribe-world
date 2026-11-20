@@ -62,7 +62,7 @@ const c={g,lite:1,pal,pop:0,body:{scale:{y:1}},lL:lb(),lR:lb(),aL:lb(),aR:lb(),p
 g.scale.setScalar(.008);if(Math.random()<.35)c.lan={visible:false};
 const hb=new THREE.Mesh(HBG,HBM);hb.position.y=.5;g.add(hb);c.i=i;g.userData.cit=c;
 lazyEl(c,0);
-const p=freeNear(ctr[0],ctr[1],Math.min(RAD*.85,5+i*.5));g.position.set(p[0],0,p[1]);scene.add(g);return c}
+const p=freeNear(ctr[0],ctr[1],Math.min(RAD*.85,5+i*.5));g.position.set(p[0],hgt(p[0],p[1]),p[1]);scene.add(g);return c}   // تولد روی زمین واقعی
 try{if(!/classic/.test(location.search)){INST=initInst();HARD=MOB?320:640;VIS=MOB?90:180}}catch(e){console.error('instancing off',e);INST=null}
 // تنظیم تعداد شهروندان نمایش‌داده‌شده (VIS). کاهش کیفیت کلی را Q (05-core-perf.js) انجام می‌دهد؛ اینجا فقط «رشد تدریجی» و «سقف پله‌ها» اعمال می‌شود
 function tune(){if(RC.on||rec){fpsUp=0;return} // هنگام ضبط، کاهش خودکار شهروندان خاموش است تا کسی از بازی ناپدید نشود
@@ -91,7 +91,7 @@ const c={g,body,lL:limb(.085,.28,pn,-.06,.3,sh),lR:limb(.085,.28,pn,.06,.3,sh),a
 g.scale.setScalar(f?.9:.8);c.hm=M(hc,.85);if(f)founderLook(c);
 if(!f&&Math.random()<.35){const ln=new THREE.Group(),lb=new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),LANT);ln.add(lb);const lh=NORAY(new THREE.Sprite(LNHALO));lh.scale.set(.6,.6,1);ln.add(lh);ln.position.set(0,-.33,.05);ln.visible=false;c.aR.add(ln);c.lan=ln}
 const hb=new THREE.Mesh(new THREE.SphereGeometry(.5,6,5),new THREE.MeshBasicMaterial({visible:false}));hb.position.y=.5;g.add(hb);c.i=i;g.userData.cit=c;lazyEl(c,f);
-const p=freeNear(ctr[0],ctr[1],Math.min(RAD*.85,5+i*.5));g.position.set(p[0],0,p[1]);scene.add(g);return c}
+const p=freeNear(ctr[0],ctr[1],Math.min(RAD*.85,5+i*.5));g.position.set(p[0],hgt(p[0],p[1]),p[1]);scene.add(g);return c}   // تولد روی زمین واقعی
 // ── ظاهر بنیان‌گذار: «هکر ماتریکس» (بازطراحی کامل مطابق کاراکتر مرجع) — بدنِ سایه‌مانند، هودی با نوک و
 // گاگل پیشانی، صورتِ تاریک با دو چشم سبزِ درخشان و هاله، پالتوی بلندِ باز با یقهٔ ایستاده و خطوط نئونی،
 // کمربند با سگک نورانی، دستکش تیره + دستبند نئونی، بوت سنگین با نور پاشنه و نور محیطی سبز.

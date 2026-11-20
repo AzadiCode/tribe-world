@@ -75,9 +75,9 @@ R.domElement.addEventListener('lostpointercapture',e=>{if(activePointer!==null&&
 addEventListener('blur',unlockWorldInput);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)unlockWorldInput()});
 addEventListener('pointerup',async e=>{if(activePointer!==null&&e.pointerId!==activePointer)return;const was=dn;dn=null;
-if(drag){const d=drag,b=d.b;drag=null;unlockWorldInput(false);cur.visible=false;d.g.position.y=0;const[x,z]=d.c;
-if((x!==b.x||z!==b.z)&&cellOk(x,z,b.id)){const ox=b.x,oz=b.z;b.x=x;b.z=z;try{await api('/api/admin/building/'+b.id,'PUT',{x,z,rot:b.rot});toast('✅ جابه‌جا و ذخیره شد')}catch(_){b.x=ox;b.z=oz;d.g.position.set(ox*U,0,oz*U)}}
-else d.g.position.set(b.x*U,0,b.z*U);return}
+if(drag){const d=drag,b=d.b;drag=null;unlockWorldInput(false);cur.visible=false;d.g.position.y=fpBaseY(b.type,b.x,b.z,b.rot);const[x,z]=d.c;   // رها کردن: نشستن روی زمینِ واقعی (کنار رود روی جالیِ ساحل)، نه y=۰
+if((x!==b.x||z!==b.z)&&cellOk(x,z,b.id)){const ox=b.x,oz=b.z;b.x=x;b.z=z;try{await api('/api/admin/building/'+b.id,'PUT',{x,z,rot:b.rot});d.g.position.y=fpBaseY(b.type,x,z,b.rot);toast('✅ جابه‌جا و ذخیره شد')}catch(_){b.x=ox;b.z=oz;d.g.position.set(ox*U,fpBaseY(b.type,ox,oz,b.rot),oz*U)}}
+else d.g.position.set(b.x*U,fpBaseY(b.type,b.x,b.z,b.rot),b.z*U);return}
 if(mode==='build'){
   if(BP.pid!=null&&e.pointerId!==BP.pid)return;               // رهاشدنِ انگشت دوم ≠ پایان ساخت؛ فقط صاحب جلسه تمامش می‌کند
   BP.pid=null;

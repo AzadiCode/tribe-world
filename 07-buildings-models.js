@@ -141,4 +141,7 @@ const back=new THREE.Mesh(new THREE.PlaneGeometry(1.5,.9),M(0x0e2c22,.8));back.p
 [-1,1].forEach(q=>{cyl(g,.028,.04,1.2,0x3a3f44,q*.72,0,0,6);ball(g,.042,0xd9b45a,q*.72,1.22,0)});
 bx(g,1.5,.03,.03,0x2c3134,0,1.2,0);
 g.userData.sw=((b.id*9301+49297)%233280)/233280*6}};   // تپش نرم باد (همان سیستم تاب درخت‌ها؛ sw در building-animation مصرف می‌شود)
-function addB(b,delay=0){const g=new THREE.Group();build[b.type]?.(g,b);g.position.set(b.x*U,0,b.z*U);g.rotation.y=(b.type==='road'||b.type==='path')?0:b.rot*Math.PI/180;g.scale.setScalar(delay>0?0:.01);Object.assign(g.userData,{b,t:delay>0?-delay:0});scene.add(g);objs.set(b.id,g)}
+function addB(b,delay=0){const g=new THREE.Group();build[b.type]?.(g,b);
+ // نشستن روی زمینِ واقعی (fpBaseY در 07-buildings-footprint.js): کنار رود سازه روی جالیِ بلندشدهٔ ساحل می‌نشیند،
+ // نه دفن زیرِ آن (باگ «محو شدن کنار آب»)؛ در مرکزِ شهرِ هموار خروجی ۰ است ⇒ هیچ چیزِ موجود جابه‌جا نمی‌شود.
+ g.position.set(b.x*U,fpBaseY(b.type,b.x,b.z,b.rot),b.z*U);g.rotation.y=(b.type==='road'||b.type==='path')?0:b.rot*Math.PI/180;g.scale.setScalar(delay>0?0:.01);Object.assign(g.userData,{b,t:delay>0?-delay:0});scene.add(g);objs.set(b.id,g)}
