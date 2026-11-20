@@ -1,7 +1,0 @@
-/* نمای داخل خانه: کارت مشخصات پایین صفحه */
-#hv{position:fixed;left:50%;bottom:calc(max(10px,env(safe-area-inset-bottom)) + 6px);width:min(290px,92vw);transform:translate(-50%,14px);opacity:0;pointer-events:none;transition:.3s;border-radius:var(--r);padding:8px 11px 7px;z-index:6;font-size:11px}
-#hv.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
-#hv h3{margin:0 0 5px;padding-inline-end:24px;font-size:12px;font-weight:800;color:var(--gold)}
-#hv .rw{display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-top:1px solid var(--line)}
-#hv .rw span{opacity:.6}#hv .rw b{font-weight:600}
-#hvx{position:absolute;top:6px;inset-inline-end:7px;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:#fff1;color:var(--cream);font:inherit;font-size:10px;cursor:pointer}
