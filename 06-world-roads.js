@@ -99,16 +99,16 @@ function roadCrossingMask(road,signs){
  for(const sign of signs){const d=fpTouchDir(sign,road);if(d>=0)mask|=[4,8,1,2][d]}
  return mask;
 }
-function roads(w){const blds=w.buildings,rs=blds.filter(b=>b.type==='road'),ps=blds.filter(b=>b.type==='path'),cs=blds.filter(b=>b.type==='crossing'),byType={road:new Map(),path:new Map()};
-const key=(x,z)=>x+','+z;for(const b of rs)byType.road.set(key(b.gx??b.x,b.gz??b.z),b);for(const b of ps)byType.path.set(key(b.gx??b.x,b.gz??b.z),b);
-const dirs=[[0,-1],[1,0],[0,1],[-1,0]],dims={road:FOOT.road[0],path:FOOT.path[0],crossing:FOOT.crossing[0]},step=(a,b)=>(dims[a]+dims[b])/2;
-const maskFor=(b,types)=>{let m=0;const x=b.gx??b.x,z=b.gz??b.z;for(const t of types){const d=step(b.type,t),map=byType[t];for(let i=0;i<4;i++){const[dx,dz]=dirs[i],o=map.get(key(x+dx*d,z+dz*d));if(o&&fpTouchDir(b,o)>=0)m|=1<<i}}return m};
-const doorMask=new Map();for(const l of fpDoorLinks(blds)){const k=l.cx+','+l.cz;doorMask.set(k,(doorMask.get(k)||0)|(1<<l.d))}
+function roads(w){const blds=w.buildings,rs=[],ps=[],cs=[];
+ for(const b of blds){if(b.type==='road')rs.push(b);else if(b.type==='path')ps.push(b);else if(b.type==='crossing')cs.push(b)}
+ fpIndexEnsure(blds); // ایندکس مجاورت (فاز ۰): یک‌بار به‌ازای هر تغییر دنیا؛ ماسک‌ها/در/گذرگاه بدون حلقهٔ درجه‌دو و بدون کلید رشته‌ای
+ const doorMask=fpDoorMask(blds); // عددی: کلید مرکز پیاده‌رو ← بیت‌های ضلعِ متصل به درِ سازه‌ها (همان مجموعهٔ fpDoorLinks)
 lampPts.length=0;
 // خط‌کشی گذرگاه فقط با «تابلوی عابر پیاده» ساخته می‌شود؛ پیاده‌رو دیگر خط‌کشی خودکار جاده را تغییر نمی‌دهد.
-for(const b of rs){const g=objs.get(b.id);if(!g)continue;const m=maskFor(b,['road']),cr=roadCrossingMask(b,cs);const lamp=((b.x+b.z)%2+2)%2===0?1:0;if(lamp)lampPts.push({x:b.x*U+.82,y:1.12,z:b.z*U+.82});const k=m+'|'+cr+'|'+lamp;if(g.userData.k!==k){g.userData.k=k;roadMesh(g,m,lamp,cr)}}
-for(const b of ps){const g=objs.get(b.id);if(!g)continue;const k=b.x+','+b.z,m=maskFor(b,['path','road'])|(doorMask.get(k)||0),style=b.style==='dirt'?'dirt':b.style==='stone'?'stone':LEGACY_PATH_STYLE,sig=m+'|'+style;if(g.userData.k!==sig){g.userData.k=sig;pathMesh(g,m,b.id,style)}}
+for(const b of rs){const g=objs.get(b.id);if(!g)continue;const m=fpMaskFor(b,['road']),cr=fpCrossMaskFor(b);const lamp=((b.x+b.z)%2+2)%2===0?1:0;if(lamp)lampPts.push({x:b.x*U+.82,y:1.12+fpBaseY('road',b.x,b.z,0),z:b.z*U+.82});const k=m+'|'+cr+'|'+lamp;if(g.userData.k!==k){g.userData.k=k;if(typeof CH!=='undefined')CH.preRefresh(g);roadMesh(g,m,lamp,cr);if(typeof CH!=='undefined')CH.refresh(g)}}   // y چراغ = ارتفاع واقعی گروه جاده (fpBaseY — کنار رود هم دقیق); فاز ۲: تایل چانک‌شده ← ورودی‌های تازه
+for(const b of ps){const g=objs.get(b.id);if(!g)continue;const k=fpIdxKey(b.gx??b.x,b.gz??b.z),m=fpMaskFor(b,['path','road'])|(doorMask.get(k)||0),style=b.style==='dirt'?'dirt':b.style==='stone'?'stone':LEGACY_PATH_STYLE,sig=m+'|'+style;if(g.userData.k!==sig){g.userData.k=sig;if(typeof CH!=='undefined')CH.preRefresh(g);pathMesh(g,m,b.id,style);if(typeof CH!=='undefined')CH.refresh(g)}}
 // تابلوی عابر پیاده رو به جادهٔ مجاورش می‌ایستد (صفحهٔ تابلو عمود بر مسیر عابر)؛ تشخیص با همان fpTouchDir.
 for(const c of cs){const g=objs.get(c.id);if(!g)continue;let fx=0,fz=0;
- for(const r of rs){const d=fpTouchDir(c,r);if(d<0)continue;fx=[0,1,0,-1][d];fz=[-1,0,1,0][d];break}
+ const r=fpFirstTouchRoad(c); // اولین جادهٔ چسبیده به ترتیب فهرست — همان رفتار «اولین rs» قبل
+ if(r){const d=fpTouchDir(c,r);fx=[0,1,0,-1][d];fz=[-1,0,1,0][d]}
  if(fx||fz)g.rotation.y=Math.atan2(fx,fz)}}

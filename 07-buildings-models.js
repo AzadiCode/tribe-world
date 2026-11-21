@@ -28,26 +28,53 @@ function bake(g){const by=new Map();for(const c of g.children.filter(c=>c.isMesh
 for(const[m,a]of by){const me=new THREE.Mesh(mergeGeometries(a),m);me.castShadow=me.receiveShadow=true;g.add(me)}}
 // تختهٔ کج (شیب سقف): طول، ضخامت، عمق، رنگ، موقعیت x و y، چرخش حول z
 const slab=(g,L,t,D,c,x,y,rz)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(L,t,D),M(c,.7));m.position.set(x,y,0);m.rotation.z=rz;return add(g,m)};
-// ── پلاک شمارهٔ خانه: تابلوی چوبی بالای در، با CanvasTexture شمارهٔ فارسی ──
-// وقتی روی خونه زوم کنیم خواناست. متن = «خانه» + شمارهٔ خونه (fa). بوم با وضوح بالا + عدد درشت.
-const _PLQ=new Map();
-function plaqueTex(num){
-  if(_PLQ.has(num))return _PLQ.get(num);
-  const c=document.createElement('canvas');c.width=420;c.height=180;const x=c.getContext('2d');
-  x.fillStyle='#5a3a22';x.fillRect(0,0,420,180);                 // قاب چوبی تیره
-  x.fillStyle='#f7eedb';x.fillRect(14,14,392,152);               // صفحهٔ کرمِ روشن
-  x.strokeStyle='#c9a85a';x.lineWidth=3;x.strokeRect(26,26,368,128); // خطِ قاب داخلی
-  x.fillStyle='#000000';x.font='800 32px Vazirmatn,Tahoma,sans-serif';x.textAlign='center';x.textBaseline='middle';
-  x.fillText('خانه',210,50);                                     // برچسب «خانه» (سیاهِ خالص)
-  x.fillStyle='#000000';x.font='800 106px Vazirmatn,Tahoma,sans-serif';
-  x.fillText(num,210,120);                                       // شمارهٔ فارسی (سیاهِ خالص، درشت)
-  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;_PLQ.set(num,t);return t;
+// ── پلاک شمارهٔ خانه (فاز ۲): قاب چوبی + رَستة «خانه + شمارهٔ فارسی» از یک اطلس مشترک حروف.
+// قبلاً به‌ازای هر خانه یک CanvasTexture اختصاصی ۴۲۰×۱۸۰ ساخته می‌شد — در مقیاس هزاران خانه بمب حافظهٔ GPU
+// بود و مانعِ ادغام پلاک‌ها در چانک (متریال یکتا = یک درا-کال برای هر خانه). حالا همه از یک اطلس می‌خوانند؛
+// در چانک همهٔ پلاک‌ها «یک مش» می‌شوند و حافظهٔ GPU از ~۳۰۰KB به ~۴۰KB برای کل شهر می‌رسد.
+// رَستة حروف = چندکوادک‌های دقیقاً هم‌اندازه/هم‌جای متن قدیمی (همان فونت/اندازه/میانه‌چینی).
+const PLAQUE_MAT=new THREE.MeshStandardMaterial({roughness:.6});
+const _PLQC={canvas:null,x:null,gl:new Map(),tex:null};
+function plqDraw(){ // رسم اطلس (بار اول + بعد از رسیدن فونت واقعی — متریک‌ها ممکن است عوض شوند)
+ try{
+  if(!_PLQC.canvas){const c=document.createElement('canvas');c.width=1024;c.height=176;_PLQC.canvas=c;_PLQC.x=c.getContext('2d');
+   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;_PLQC.tex=t;PLAQUE_MAT.map=t;PLAQUE_MAT.needsUpdate=true}
+  const x=_PLQC.x,A=1024;x.clearRect(0,0,A,176);x.textAlign='left';x.textBaseline='alphabetic';x.fillStyle='#000';
+  const GL=_PLQC.gl;GL.clear();let cx=3;
+  const put=(ch,font,y0,y1,base)=>{x.font=font;const w=Math.ceil(x.measureText(ch).width);x.fillText(ch,cx,base);GL.set(ch,{x:cx,w,y0,y1});cx+=w+3};
+  put('خانه','800 32px Vazirmatn,Tahoma,sans-serif',6,46,38);
+  const df='800 106px Vazirmatn,Tahoma,sans-serif';
+  for(const ch of '۰۱۲۳۴۵۶۷۸۹٬')put(ch,df,58,168,150);
+  _PLQC.tex.needsUpdate=true;return true
+ }catch(e){return false}
 }
-// ساخت پلاک روی گروه خونه: قاب چوبی + صفحهٔ متنی، بالای در (محور +z = جلوی خونه)
+plqDraw();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{ // فونت واقعی رسید: اطلس تازه + پلاکِ همهٔ خانه‌های زنده دوباره
+ if(!plqDraw())return;
+ if(typeof CH!=='undefined'&&CH.plaqueChanged)CH.plaqueChanged();
+ for(const g of objs.values())if(g.userData.b&&g.userData.b.type==='house'&&g.userData.plq&&g.userData.m!==1){
+  for(const c of[...g.children])if(c.userData&&c.userData.plq){g.remove(c);if(c.geometry&&!SHGEO.has(c.geometry))c.geometry.dispose()}
+  plaque(g,fa(g.userData.b.id))}});
+// ساخت پلاک روی گروه خانه: قاب چوبی (بستهٔ متریال معمولی → در سطل VC ادغام می‌شود) + رَستة حروف با متریال اطلس مشترک
 function plaque(g,num){
-  const tx=plaqueTex(num);
-  const fr=new THREE.Mesh(new THREE.BoxGeometry(.66,.26,.035),M(0x5a3a22));fr.position.set(0,.80,.51);fr.castShadow=true;fr.receiveShadow=true;g.add(fr);
-  const fc=new THREE.Mesh(new THREE.PlaneGeometry(.60,.21),new THREE.MeshStandardMaterial({map:tx,roughness:.6}));fc.position.set(0,.80,.531);g.add(fc);
+ const fr=new THREE.Mesh(new THREE.BoxGeometry(.66,.26,.035),M(0x5a3a22));fr.position.set(0,.80,.51);fr.castShadow=true;fr.receiveShadow=true;fr.userData.plq=1;g.add(fr);
+ const A=_PLQC;if(!A.tex)return;
+ const sx=.60/420,sy=.21/180,yW=v=>.105-v*sy,z=0;
+ const pos=[],uv=[],nrm=[],idx=[];let vi=0;
+ const quad=(G,x0,x1,top,bot)=>{pos.push(x0,top,z, x1,top,z, x1,bot,z, x0,bot,z);
+  const u0=G.x/A.canvas.width,u1=(G.x+G.w)/A.canvas.width,v0=1-G.y0/A.canvas.height,v1=1-G.y1/A.canvas.height;
+  uv.push(u0,v0, u1,v0, u1,v1, u0,v1);
+  for(let i=0;i<4;i++)nrm.push(0,0,1);
+  idx.push(vi,vi+1,vi+2, vi,vi+2,vi+3);vi+=4};
+ {const G=A.gl.get('خانه');if(G){const w=G.w*sx,cx0=-w/2;quad(G,cx0,cx0+w,yW(38)+(38-G.y0)*sy,yW(38)-(G.y1-38)*sy)}}
+ {const s=String(num),qs=[];let tot=0;for(const ch of s){const G=A.gl.get(ch);if(G){qs.push(G);tot+=G.w*sx}}
+  let cx0=-tot/2;for(const G of qs){const w=G.w*sx;quad(G,cx0,cx0+w,yW(150)+(150-G.y0)*sy,yW(150)-(G.y1-150)*sy);cx0+=w}}
+ const ge=new THREE.BufferGeometry();
+ ge.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+ ge.setAttribute('normal',new THREE.Float32BufferAttribute(nrm,3));
+ ge.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+ ge.setIndex(idx);
+ const q=new THREE.Mesh(ge,PLAQUE_MAT);q.position.set(0,.80,.531);q.userData.plq=1;g.add(q);
 }
 const build={
 house(g,b){const k=b.id,wc=WALL[k%4],rc=ROOF[(k>>2)%4],rd=new THREE.Color(rc).multiplyScalar(.78).getHex(),TB=0x6b4326,TD=0x4a3022,SH=AWN[k%4];
@@ -141,7 +168,10 @@ const back=new THREE.Mesh(new THREE.PlaneGeometry(1.5,.9),M(0x0e2c22,.8));back.p
 [-1,1].forEach(q=>{cyl(g,.028,.04,1.2,0x3a3f44,q*.72,0,0,6);ball(g,.042,0xd9b45a,q*.72,1.22,0)});
 bx(g,1.5,.03,.03,0x2c3134,0,1.2,0);
 g.userData.sw=((b.id*9301+49297)%233280)/233280*6}};   // تپش نرم باد (همان سیستم تاب درخت‌ها؛ sw در building-animation مصرف می‌شود)
-function addB(b,delay=0){const g=new THREE.Group();build[b.type]?.(g,b);
+// ساخت مدل سازه روی گروه (بدون ثبت در صحنه) — مشترک میان addB و demote چانک (فاز ۲)
+function fillB(g,b){build[b.type]?.(g,b);
  // نشستن روی زمینِ واقعی (fpBaseY در 07-buildings-footprint.js): کنار رود سازه روی جالیِ بلندشدهٔ ساحل می‌نشیند،
  // نه دفن زیرِ آن (باگ «محو شدن کنار آب»)؛ در مرکزِ شهرِ هموار خروجی ۰ است ⇒ هیچ چیزِ موجود جابه‌جا نمی‌شود.
- g.position.set(b.x*U,fpBaseY(b.type,b.x,b.z,b.rot),b.z*U);g.rotation.y=(b.type==='road'||b.type==='path')?0:b.rot*Math.PI/180;g.scale.setScalar(delay>0?0:.01);Object.assign(g.userData,{b,t:delay>0?-delay:0});scene.add(g);objs.set(b.id,g)}
+ g.position.set(b.x*U,fpBaseY(b.type,b.x,b.z,b.rot),b.z*U);g.rotation.y=(b.type==='road'||b.type==='path')?0:b.rot*Math.PI/180}
+function addB(b,delay=0){const g=new THREE.Group();fillB(g,b);
+ g.scale.setScalar(delay>0?0:.01);Object.assign(g.userData,{b,t:delay>0?-delay:0});scene.add(g);objs.set(b.id,g)}

@@ -85,7 +85,11 @@ let pudM=null,snowPM=null;
 // استثناها: شیدرهای اختصاصی (زمین/آب/ذرات — onBeforeCompile دارند)، متریال‌های شفاف (هاله/شبح/پوشش‌ها) و منابع نورِ
 // قوی (لامپ/پنجرهٔ شب) — این‌ها یا خود موتور آب‌وهوا مستقیم مدیریت‌شان می‌کند یا نباید برف‌گیر/خیس شوند.
 const WXU={wet:{value:0},snow:{value:0},tint:{value:new THREE.Color(1,1,1)},tintAmt:{value:0},rough:{value:.4},up:{value:new THREE.Vector3(0,1,0)}};
+// فاز ۰ — کلید بنچمارک ALU: ?wxp=0 این لایه را کامل خاموش می‌کند (هیچ متریالی patch نمی‌شود و گشت‌زنی دوره‌ای هم نیست).
+// فقط برای اندازه‌گیری «هزینهٔ روشن/خاموش» و مقایسهٔ عددی — پیش‌فرض روشن = رفتار و ظاهر همیشگی. تصمیم حذف/ساده‌سازی بعد از عدد.
+const WXP_OFF=new URLSearchParams(location.search).get('wxp')==='0';
 function wxPatchMat(m){
+ if(WXP_OFF)return;
  if(!m||m.userData.wxP)return;m.userData.wxP=1;
  // توجه: onBeforeCompile روی Material.prototype یک تابعِ خالیِ پیش‌فرض است و همیشه truthy؛
  // «own property» بودنش یعنی شیدر اختصاصی (زمین/آب/جنگل) — آن‌ها نباید دوباره patch شوند.
@@ -98,9 +102,9 @@ function wxPatchMat(m){
 }
 // ثبت اولیه: همهٔ متریال‌های موجود تا همین لحظهٔ بارگذاری (زمین/جاده/منظره/مدل‌ها + کشِ متریال‌های مشترک) —
 // قبل از اولین رندر انجام می‌شود ⇒ صفر کامپایل مجدد شیدر در حین بازی.
-{const wxReg=o=>{if(!o)return;(Array.isArray(o.material)?o.material:[o.material]).forEach(wxPatchMat)};
+{if(!WXP_OFF){const wxReg=o=>{if(!o)return;(Array.isArray(o.material)?o.material:[o.material]).forEach(wxPatchMat)};
  scene.traverse(c=>{if(c.isMesh||c.isInstancedMesh||c.isPoints)wxReg(c)});
- for(const k in mats)wxPatchMat(mats[k])}
+ for(const k in mats)wxPatchMat(mats[k])}}
 let wxSweepT=.4,wxSweepN=15; // گشت‌زنی متریال‌های زمان-اجر (بنر، پایهٔ چراغ، شهروند، متریال‌های تازهٔ جاده…): در دوران ساخت دنیا هر ۰٫۴ثانیه، بعد هر ۲٫۵ثانیه — هر متریال فقط یک‌بار patch می‌شود
 // ─── ۵) هدف پاکت + همگام‌سازی از سرور (از sync در 12-net-sync.js صدا زده می‌شود) ───────────────────────────────────────────
 function wxTarget(t,i){const b=WXTYPES[t],k=.45+.55*i;return{
@@ -113,7 +117,7 @@ function wxSync(w){const d=(w&&typeof w==='object')?w:{};
  const sig=t+'|'+i.toFixed(2)+'|'+Math.round(tp)+'|'+tr+'|'+WXmode;
  if(sig===WXsig)return;WXsig=sig;
  WXfrom={...WXcur};WXto=wxTarget(t,i);WXt0=performance.now()/1000;WXsec=tr; // گذار نرم با مدت قابل‌تنظیم
- WXtype=t;WXint=i;WXtemp=tp;wxHUD(true)}
+ WXtype=t;WXint=i;WXtemp=tp;wxHUD(true);TWE.emit('weather:changed',{type:t,intensity:i})}
 // ─── ۶) رعدوبرق: فلش چندضربه‌ای روی نور/آسمان موجود (بدون افزودن نور ⇒ بدون recompile شیدر) + صدای تأخیری WebAudio ───────────────────────────────────────────
 let boltT=9;
 function wxStrike(){FLASH=1;_strikeQ.length=0;_strikeQ.push(.1+Math.random()*.07);if(Math.random()<.5)_strikeQ.push(.24+Math.random()*.12);
@@ -168,7 +172,7 @@ function weatherStep(dt,t){const P=QLV[Q.lv()],fxOn=!!P.fx,den=WXQ[Q.lv()];
  WXU.wet.value=WET;WXU.snow.value=SNOWG*.85;WXU.rough.value=.42-WET*.24;
  if(coldT>.001||hotT>.001){WXU.tint.value.setRGB(1+hotT*.05-coldT*.06,1-coldT*.03-hotT*.02,1+coldT*.09-hotT*.1);WXU.tintAmt.value=Math.max(coldT*.5,hotT*.42)}else WXU.tintAmt.value=0;
  _wxQ.copy(cam.quaternion).invert();WXU.up.value.set(0,1,0).applyQuaternion(_wxQ);
- if((wxSweepT-=dt)<=0){wxSweepT=wxSweepN-->0?.4:2.5;
+ if(!WXP_OFF&&(wxSweepT-=dt)<=0){wxSweepT=wxSweepN-->0?.4:2.5;
   scene.traverse(c=>{if(c.isMesh||c.isInstancedMesh||c.isPoints){const m=c.material;if(m)(Array.isArray(m)?m:[m]).forEach(wxPatchMat)}})}
  sun.intensity=_kf.si*(1-cSun*.55-dark*.26)+fl*Math.max(.15,_kf.si*.6);
  _wxA.copy(_wxS).lerp(_wxB.setHex(0x9fb2c4),Math.min(.85,cSun*.6+dark*.15));_wxA.lerp(_wxB.setHex(0xffd9a0),hotT*.35);sun.color.copy(_wxA);
@@ -234,3 +238,6 @@ function weatherStep(dt,t){const P=QLV[Q.lv()],fxOn=!!P.fx,den=WXQ[Q.lv()];
 globalThis.WXENG={set:(t,i=.8,temp)=>wxSync({mode:'manual',type:t,intensity:i,temp:temp==null?WXtemp:temp,transition:2}),
  auto:()=>wxSync({mode:'auto',type:WXtype,intensity:WXint,temp:WXtemp,transition:10}),
  state:()=>({type:WXtype,intensity:WXint,mode:WXmode,temp:WXtempC,env:{...WXcur},wet:WET,snowGround:SNOWG,wind:{...WIND}})};
+// ─── ۱۱) رویدادمحور (Engine 2.0): ساختمانِ تازه = متریال‌های زمان‌اجرِ تازه ⇒ لایهٔ سطوح (خیس/برف/ته‌رنگ)
+// بی‌درنگ رویشان بنشیند — به‌جای انتظار برای گشت‌زنیِ دوره‌ای؛ تغییر آب‌وهوا هم از EventBus عبور می‌کند.
+TWE.on('buildings:changed',()=>{wxSweepT=.05;wxSweepN=Math.max(wxSweepN,2)});

@@ -2,38 +2,46 @@
 'use strict';
 const cars=[],CC=[0xd94f3a,0xf0b13a,0x3f7f99,0x7cb342,0xf2ead6,0x94527f],HL=new THREE.MeshStandardMaterial({color:0xfff3c4,emissive:0xffe08a,emissiveIntensity:.2}),WH=new THREE.CylinderGeometry(.07,.07,.05,10),LANE=.38;
 const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
-let spT=3,carRoadGraph=[],carRoadSig='',carSerial=0;
-const carSignals=new Map();
+let spT=3,carRoadGraph=[],carSerial=0,carRoadVerSeen=-1;
+const carSignals=new Map(); // فاز ۰: کلید عددی شبکه‌ای ← {g:ریشهٔ چراغ‌ها, n:گره} — بدون split/find در هر تیک
+// ── Engine 2.0: گروهِ خودرو از استخرِ TWE می‌آید (چرخهٔ تولید/حذفِ طبیعی بدون ساخت/حذفِ هندسه و فشار GC)
+TWE.Pools.pool('car',{
+ create(){const g=new THREE.Group();
+  const col=[bx(g,.62,.13,.3,0xffffff,0,.05),bx(g,.32,.12,.26,0xffffff,-.05,.18)];bx(g,.3,.07,.275,0x9fc4d6,-.05,.2);
+  [[.2,.16],[.2,-.16],[-.2,.16],[-.2,-.16]].forEach(([x,z])=>{const w=new THREE.Mesh(WH,M(0x25282c));w.rotation.x=Math.PI/2;w.position.set(x,.07,z);g.add(w)});
+  [-.09,.09].forEach(z=>{const l=new THREE.Mesh(new THREE.BoxGeometry(.03,.05,.07),HL);l.position.set(.32,.12,z);g.add(l)});
+  g.userData.col=col;return g},
+ reset(g){const col=rr(CC);for(const m of g.userData.col)m.material=M(col)},   // رنگ تازه برای هر تولید
+ dispose(g){g.traverse(o=>{if(o.geometry&&o.geometry!==WH)o.geometry.dispose()})}});
+function mkCar(){return TWE.Pools.get('car')}
 // گراف دقیقاً از همان کلید شبکه‌ای ناوبری ساخته می‌شود؛ مختصات واقعی قطعه برای حرکت حفظ می‌شود.
+// فاز ۰: بازسازی فقط با carRoadVer (امضای عددی rebuildNav) — قبلاً در «هر تیک» رشتهٔ امضای O(N·logN) ساخته می‌شد؛
+// با هزاران جاده فقط یک مقایسهٔ عددی در هر تیک هزینه می‌شود و ساختار گراف و رفتار خودروها دست‌نخورده است.
 function rebuildCarRoadGraph(){
+ if(carRoadVerSeen===carRoadVer)return false;
+ carRoadVerSeen=carRoadVer;
  const src=Array.isArray(roadC)?roadC:[],nodes=[],byKey=new Map();
  for(const r of src){const ix=Math.round(r.x/CELL),iz=Math.round(r.z/CELL),key=ix+','+iz;
   const n={ix,iz,x:r.x,z:r.z,neighbors:[],b:r.b};nodes.push(n);byKey.set(key,n)}
- const sig=nodes.map(n=>n.ix+','+n.iz+':'+n.x.toFixed(4)+','+n.z.toFixed(4)+':'+(n.b&&n.b.tl?1:0)).sort().join('|');
- if(sig===carRoadSig)return false;
- carRoadSig=sig;
  for(const n of nodes)for(const [dx,dz] of DIRS){const next=byKey.get((n.ix+dx)+','+(n.iz+dz));if(next)n.neighbors.push({node:next,dx,dz})}
  carRoadGraph=nodes.filter(n=>n.neighbors.length>0);
  // چراغ واقعی برای هر تقاطع سه‌راه/چهارراه فقط با اجازهٔ مدیر (فیلد tl روی رکورد کاشی)؛ هر ورودی سرِ چراغ مستقل دارد.
  // سرِ چراغ روی «گوشهٔ پیاده‌رو» می‌نشیند (فاصلهٔ جانبی ۰٫۸۴ بیرون از آسفالت جادهٔ عرضی) نه روی جاده،
  // و ارتفاع از ۱٫۵۵ به ۱٫۱۳ کوتاه‌تر شد تا با مقیاس بازی هماهنگ باشد.
- for(const g of carSignals.values()){scene.remove(g);g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose()}})}carSignals.clear();
- for(const n of carRoadGraph)if(n.neighbors.length>=3&&n.b&&n.b.tl){const root=new THREE.Group();root.position.set(n.x,hgt(n.x,n.z),n.z);   // چراغ هم روی زمینِ واقعی بنشیند (کنار رود روی جالیِ ساحل)
+ for(const g of carSignals.values()){scene.remove(g.g);g.g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose()}})}carSignals.clear();
+ for(const n of carRoadGraph)if(n.neighbors.length>=3&&n.b&&n.b.tl){const root=new THREE.Group();root.position.set(n.x,fpBaseY('road',n.b.gx??n.b.x,n.b.gz??n.b.z,0),n.z);   // چراغ دقیقاً روی ارتفاعِ گروهِ جاده (fpBaseY — کنار رود هم هم‌تراز)
   for(const e of n.neighbors){const d=[-e.dx,-e.dz],side=[-d[1],d[0]],h=new THREE.Group();h.position.set(-d[0]*.80+side[0]*.84,0,-d[1]*.80+side[1]*.84);h.rotation.y=Math.atan2(-d[0],-d[1]);
    const pole=new THREE.Mesh(new THREE.CylinderGeometry(.022,.036,.9,6),new THREE.MeshStandardMaterial({color:0x34383a,roughness:.8}));pole.position.y=.45;h.add(pole);
    const box=new THREE.Mesh(new THREE.BoxGeometry(.17,.36,.14),new THREE.MeshStandardMaterial({color:0x202326,roughness:.65}));box.position.set(0,1.02,0);h.add(box);
    const bulbs=[];for(let j=0;j<3;j++){const colors=[0xff2929,0xffc928,0x36df69],mat=new THREE.MeshStandardMaterial({color:colors[j],emissive:colors[j],emissiveIntensity:.06,roughness:.3});const bulb=new THREE.Mesh(new THREE.SphereGeometry(.046,8,6),mat);bulb.position.set(0,1.13-j*.105,.078);h.add(bulb);bulbs.push(bulb)}
    h.userData={d,bulbs};root.add(h)
-  }scene.add(root);carSignals.set(n.ix+','+n.iz,root)
+  }scene.add(root);carSignals.set((n.ix+512)*2048+(n.iz+512),{g:root,n})
  }
  for(const c of cars)c.out=1;
  return true;
 }
 function signalStatus(node,d,t){const phase=(t+(Math.abs(node.ix*7+node.iz*13)%14))%14,horizontal=Math.abs(d[0])>.5;if(horizontal){if(phase<5)return'green';if(phase<6)return'yellow';return'red'}if(phase>=7&&phase<12)return'green';if(phase>=12&&phase<13)return'yellow';return'red'}
-function updateCarSignals(t){for(const [key,g] of carSignals){const [ix,iz]=key.split(',').map(Number),n=carRoadGraph.find(v=>v.ix===ix&&v.iz===iz);if(!n)continue;for(const h of g.children){const st=signalStatus(n,h.userData.d,t);h.userData.bulbs.forEach((b,i)=>{b.material.emissiveIntensity=(i===(st==='red'?0:st==='yellow'?1:2))?1.65:.035})}}}
-function mkCar(){const g=new THREE.Group(),col=rr(CC);bx(g,.62,.13,.3,col,0,.05);bx(g,.32,.12,.26,col,-.05,.18);bx(g,.3,.07,.275,0x9fc4d6,-.05,.2);
- [[.2,.16],[.2,-.16],[-.2,.16],[-.2,-.16]].forEach(([x,z])=>{const w=new THREE.Mesh(WH,M(0x25282c));w.rotation.x=Math.PI/2;w.position.set(x,.07,z);g.add(w)});
- [-.09,.09].forEach(z=>{const l=new THREE.Mesh(new THREE.BoxGeometry(.03,.05,.07),HL);l.position.set(.32,.12,z);g.add(l)});return g}
+function updateCarSignals(t){for(const s of carSignals.values())for(const h of s.g.children){const st=signalStatus(s.n,h.userData.d,t);h.userData.bulbs.forEach((b,i)=>{b.material.emissiveIntensity=(i===(st==='red'?0:st==='yellow'?1:2))?1.65:.035})}}
 function carLanePoint(node,d){return{x:node.x-d[1]*LANE,z:node.z+d[0]*LANE}}
 function pickNext(c,forced){
  const node=c.node,ns=node.neighbors;let e=null;
@@ -109,13 +117,13 @@ function carSafeSpeed(c,dx,dz){
 function stepCars(dt,t){
  HL.emissiveIntensity=.15+2.2*NT;HQG.opacity=.04+.75*NT;HQGL.emissiveIntensity=.06+1.7*NT;ffStep(t);for(const p of cits)if(p.lan)p.lan.visible=NT>.4;if(hqDish)hqDish.rotation.y=t*.7;
  rebuildCarRoadGraph();updateCarSignals(t);
- const homesN=homes.filter(h=>!h.hq).length,people=Math.max(0,POP||cits.length),roadsN=roadC.length;
+ const people=Math.max(0,POP||cits.length),roadsN=roadC.length;
  const base=roadsN>=3?Math.min(6,1+(roadsN/5|0)):0,activity=Math.min(1.8,.55+homesN*.12+people*.035),want=base?Math.min(8,Math.max(1,Math.round(base*activity))):0,tg=Math.round(want*(1-NT*.75));
  if((spT-=dt)<=0){spT=2+Math.random()*4;if(cars.filter(c=>!c.out).length<tg)spawnCar()}
  for(let i=cars.length-1;i>=0;i--){const c=cars[i],g=c.g;
   if((c.life-=dt)<=0)c.out=1;
   c.sc=Math.max(0,Math.min(1,c.sc+(c.out?-dt*2:dt*2)));g.scale.setScalar(Math.max(.01,c.sc)*1.3);
-  if(c.out&&c.sc<=0){scene.remove(g);g.traverse(o=>{if(o.geometry&&o.geometry!==WH)o.geometry.dispose()});cars.splice(i,1);continue}
+  if(c.out&&c.sc<=0){scene.remove(g);TWE.Pools.put('car',g);cars.splice(i,1);continue}   // بازگشت به استخر (بدون حذف هندسه)
   if(c.out)continue;
   let vx,vz,dist=0;
   if(c.turn){const q=carBezier(c.turn,c.turn.u),mag=Math.hypot(q.dx,q.dz)||1;vx=q.dx/mag;vz=q.dz/mag}

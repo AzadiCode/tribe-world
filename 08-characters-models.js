@@ -64,11 +64,13 @@ const hb=new THREE.Mesh(HBG,HBM);hb.position.y=.5;g.add(hb);c.i=i;g.userData.cit
 lazyEl(c,0);
 const p=freeNear(ctr[0],ctr[1],Math.min(RAD*.85,5+i*.5));g.position.set(p[0],hgt(p[0],p[1]),p[1]);scene.add(g);return c}   // تولد روی زمین واقعی
 try{if(!/classic/.test(location.search)){INST=initInst();HARD=MOB?320:640;VIS=MOB?90:180}}catch(e){console.error('instancing off',e);INST=null}
-// تنظیم تعداد شهروندان نمایش‌داده‌شده (VIS). کاهش کیفیت کلی را Q (05-core-perf.js) انجام می‌دهد؛ اینجا فقط «رشد تدریجی» و «سقف پله‌ها» اعمال می‌شود
-function tune(){if(RC.on||rec){fpsUp=0;return} // هنگام ضبط، کاهش خودکار شهروندان خاموش است تا کسی از بازی ناپدید نشود
-const mx=Math.max(1,Math.min(POP,HARD,Q.citCap())),MIN=MOB?24:36;vcT+=1.5;if(vcT>=8){vcT=0;if(VCAP<1e9)VCAP=Math.ceil(VCAP*1.12)+3}
+// تنظیم تعداد شهروندان نمایش‌داده‌شده (VIS). کاهش کیفیت کلی را Q (05-core-perf.js) انجام می‌دهد؛
+// ─── سیاستٔ Engine 2.0: تعداد شهروندانِ واقعی هیچ‌وقت با کیفیت/کندی کم نمی‌شود (مأموریت §۹) —
+// اینجا فقط «رشد تدریجی VIS تا سقف سخت‌افزاری» و بازگشت از رکورد قبلی انجام می‌شود؛
+// اگر دستگاهِ ضعیفی نتواند همه را روان برساند، این محدودیت صادقانه در داشبورد (?perf=1) دیده می‌شود، نه با حذفِ پنهانی.
+function tune(){if(RC.on||rec){fpsUp=0;return} // هنگام ضبط، تغییر شهروندان خاموش است تا کسی از بازی ناپدید نشود
+const mx=Math.max(1,Math.min(POP,HARD,Q.citCap()));vcT+=1.5;if(vcT>=8){vcT=0;if(VCAP<1e9)VCAP=Math.ceil(VCAP*1.12)+3}
 if(VIS>mx){VIS=mx;VCAP=Math.min(VCAP,VIS+4);fitCits();fpsUp=0}
-else if(fpsA<27&&Q.lv()>=9&&VIS>MIN){VIS=Math.max(MIN,Math.floor(VIS*.85));VCAP=VIS+4;fitCits();fpsUp=0} // آخرین پله: کاهش ریز شهروندان
 else if(fpsA>50&&VIS<mx&&VIS<VCAP){if(++fpsUp>=2){VIS=Math.min(mx,VCAP,Math.ceil(VIS*1.1)+3);fitCits();fpsUp=0}}
 else fpsUp=0}
 function mkCit(i){if(i>0&&INST)return mkCitLite(i);const g=new THREE.Group(),f=i===0,cl=f?0x12161d:rr(cloth),sk=f?0x0a0e13:rr(skin),hc=f?0x0d1117:rr(hairC),pn=f?0x0e1218:rr(pants),hs=f?0:(Math.random()*5|0);g.rotation.order='YXZ';

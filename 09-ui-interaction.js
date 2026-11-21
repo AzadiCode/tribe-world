@@ -28,7 +28,12 @@ const gpt=e=>{ray0(e);return ray.ray.intersectPlane(GP,gp3)?[gp3.x,gp3.z]:null},
 function tgtOf(e,it){const t=it?it.type:BP.type,p=gpt(e);if(!p)return null;const o=(it&&BP.down&&BP.down.off)||[0,0];
   return fpSnap(t,it?it.rot:BP.rot,p[0]+o[0],p[1]+o[1],W.buildings.concat(BP.items.filter(i=>i!==it)))}
 function pickAt(e){ray0(e);if(mode!=='move'){const h=ray.intersectObjects(cits.map(c=>c.g),true)[0];if(h){let o=h.object;while(o&&!o.userData.cit)o=o.parent;if(o)return{c:o.userData.cit}}}
-const h=ray.intersectObjects([...objs.values()],true)[0];if(h){let o=h.object;while(o&&!o.userData.b)o=o.parent;if(o)return{g:o,b:o.userData.b}}return{}}
+// فاز ۲: زنده‌ها با raycast دقیق + ادغام‌شده‌ها با AABBهای کش‌شدهٔ چانک؛ نزدیک‌ترین برخورد برنده است
+let best=null;
+const hl=ray.intersectObjects([...objs.values()].filter(g=>!g.userData.m),true)[0];
+if(hl){let o=hl.object;while(o&&!o.userData.b)o=o.parent;if(o)best={g:o,b:o.userData.b,t:hl.distance}}
+if(typeof CH!=='undefined'){const hc=CH.pickHit(ray);if(hc){const g=objs.get(hc.id);if(g&&(!best||hc.t<best.t))best={g,b:g.userData.b,t:hc.t}}}
+return best?{g:best.g,b:best.b}:{}}
 function paintAt(e){const c=cellOf(e);if(!c)return;const k=c+'';if(painted.has(k))return;painted.add(k);bpAdd(c[0],c[1])}
 // ── مود ساخت (نقشهٔ ساز): جریان لمسی = شبح زیر انگشت · درگ آیتم = جابه‌جایی · تپ کوتاه = انتخاب · تپ دوباره روی انتخاب‌شده = حذف
 // انتخاب از صف: اول آیتمِ همان سلولی که اشاره‌گر روی آن است (دقیق)، وگرنه نزدیک‌ترین برخوردِ واقعی raycast
@@ -48,7 +53,8 @@ const bpDrag=e=>{const it=BP.dragIt,c=tgtOf(e,it);if(!c)return;
 async function onTap(e){const h=pickAt(e);
 if(h.c){react(h.c);if(h.c.me&&!(T&&(mode==='name'||mode==='say'))){const v=await ask('اسم کارکتر تو (خالی = پیش‌فرض)',nameOf(MY));if(v!==null)fetch('/api/player/name',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init:INIT,name:v})}).then(r=>r.ok?poll():r.json().then(j=>toast(j.error||'خطا'))).catch(()=>0)}else if(T&&mode==='name'){const v=await ask('نام مستعار (خالی = پیش‌فرض)',nameOf(h.c.i));if(v!==null)api('/api/admin/citizen/'+h.c.i,'PUT',{name:v}).catch(()=>0)}
 else if(T&&mode==='say'){const v=await ask('پیام بالای سر «'+nameOf(h.c.i)+'»');if(v)api('/api/admin/say','POST',{cid:h.c.i,text:v}).catch(()=>0)}return}
-if(h.b){h.g.userData.t=.55;
+if(h.b){if(h.g.userData.m&&typeof CH!=='undefined')CH.demote(h.b.id);   // فاز ۲: سازهٔ چانک‌شده ← زنده برای پالس/نمای داخل
+h.g.userData.t=.55;
 if(T&&mode==='rot')api('/api/admin/building/'+h.b.id,'PUT',{x:h.b.x,z:h.b.z,rot:(h.b.rot+90)%360}).catch(()=>0);
 else if(T&&mode==='del'){if(confirm('حذف شود؟'))api('/api/admin/building/'+h.b.id,'DELETE').catch(()=>0)}
 else if(T&&mode==='tl'&&h.b.type==='road')api('/api/admin/road-lights','POST',{id:h.b.id}).then(j=>toast(j.on?'🚦 چراغ راهنمایی این تقاطع اعمال شد':'چراغ راهنمایی این تقاطع حذف شد')).catch(()=>0);
@@ -62,7 +68,8 @@ const d=await ask('تاریخ ساخت شهر',cur[2]||'');if(d===null)return;
 const x=await ask('متن اضافه (اختیاری — مثلاً شعار شهر)',cur[3]||'');if(x===null)return;
 api('/api/admin/banner','POST',{id:b.id,name:n,ceo:c,date:d,extra:x}).then(()=>toast('🎌 متن تابلو بنری به‌روزرسانی شد')).catch(()=>0)}
 R.domElement.addEventListener('pointerdown',e=>{dn={x:e.clientX,y:e.clientY,t:performance.now()};if(!T||!mode)return;
-if(mode==='move'){const h=pickAt(e);if(h.b){captureWorldPointer(e);const g0=gpt(e);drag={g:h.g,b:h.b,c:[h.b.x,h.b.z],off:g0?[h.b.x*U-g0[0],h.b.z*U-g0[1]]:[0,0]};ctl.enabled=false;cur.visible=true;cur.position.set(h.b.x*U,.12,h.b.z*U);cur.material.color.setHex(0x3ddc97)}}
+if(mode==='move'){const h=pickAt(e);if(h.b){if(h.g.userData.m&&typeof CH!=='undefined')CH.demote(h.b.id);   // فاز ۲: درگ روی سازهٔ چانک‌شده ← اول زنده شود
+captureWorldPointer(e);const g0=gpt(e);drag={g:h.g,b:h.b,c:[h.b.x,h.b.z],off:g0?[h.b.x*U-g0[0],h.b.z*U-g0[1]]:[0,0]};ctl.enabled=false;cur.visible=true;cur.position.set(h.b.x*U,.12,h.b.z*U);cur.material.color.setHex(0x3ddc97)}}
 else if(mode==='build'){
   if(BP.pid!=null&&e.pointerId!==BP.pid)return;               // چندلمسی: انگشت دوم نباید استروک ساخت را خراب کند
   BP.pid=e.pointerId;                                          // فقط اولین انگشت صاحب جلسهٔ ساخت است

@@ -36,7 +36,7 @@ HOV.g=g;HOV.act.add(g);HOV.goal.set(g.position.x,.35,g.position.z);HOV.fly=1;HOV
 function closeHouse(){HOV.g=null;HOV.fly=0;$('hv').classList.remove('on')}
 function stepHouse(dt){
 if(HOV.g){const g=HOV.g;if(objs.get(g.userData.b.id)!==g||cam.position.distanceTo(ctl.target)>HOV_NEAR*1.7)closeHouse();else if((HOV.t-=dt)<=0){HOV.t=1.5;hvFill()}}
-for(const g of HOV.act){const u=g.userData,to=g===HOV.g?1:0;u.ok+=(to-u.ok)*Math.min(1,dt*5);if(Math.abs(to-u.ok)<.01){u.ok=to;if(!to)HOV.act.delete(g)}
+for(const g of HOV.act){const u=g.userData,to=g===HOV.g?1:0;u.ok+=(to-u.ok)*Math.min(1,dt*5);if(Math.abs(to-u.ok)<.01){u.ok=to;if(!to){HOV.act.delete(g);if(typeof CH!=='undefined'&&CH.mergeable(u.b.type)&&!u.m)CH.queue(g)}}   // فاز ۲: پایان بستنِ خانه ← دوباره به صفِ ادغام
 const e=u.ok*u.ok*(3-2*u.ok);u.roof.position.y=u.ry+e*u.rl;u.roof.rotation.y=e*.5;u.roof.visible=u.ok<.97;u.walls.scale.y=1-.6*e}
 if(HOV.fly){const k=Math.min(1,dt*3.5);ctl.target.lerp(HOV.goal,k);const off=cam.position.clone().sub(ctl.target),sp=new THREE.Spherical().setFromVector3(off);sp.radius+=(HOV.D-sp.radius)*k;sp.phi+=(HOV.PH-sp.phi)*k;sp.makeSafe();
 off.setFromSpherical(sp);cam.position.copy(ctl.target).add(off);if(ctl.target.distanceTo(HOV.goal)<.02&&Math.abs(sp.radius-HOV.D)<.05)HOV.fly=0}}

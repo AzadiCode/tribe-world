@@ -3,13 +3,18 @@
 // ── ضبط ویدیوی بازی (فقط پنل مدیر): تصویر سه‌بعدی + موسیقی بازی، با کیفیت بالا؛ در پایان فایل کامل ذخیره می‌شود
 const RC={on:0};let rec=null,rch=[],rbytes=0,rt0=0,racc=0,rtick=0,rAud=null,rUrl='';const RCAP=150*1048576,RFPS=30,
 RMT=['video/mp4;codecs=avc1.640033,mp4a.40.2','video/mp4;codecs=avc1,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+// فاز ۰ — محافظ غیربصری ضبط: اگر حین ضبط زمینهٔ WebGL از دست برود یا heap مرورگر از آستانه بگذرد،
+// ضبط «تمیز» متوقف و فایل تا همین لحظه ذخیره می‌شود (به‌جای کرش/از دست رفتن همهٔ ویدیو).
+// آستانهٔ heap: ۸۵٪ سقف مرورگر و حداکثر ۱٫۲GB (حدود ۴برابر مصرف عادی بازی) — فقط Chromium performance.memory دارد؛ جاهای دیگر محافظ بی‌اثر و بی‌هزینه است.
+const rHeapOK=()=>{try{const m=performance.memory;if(!m||!m.jsHeapSizeLimit)return true;return m.usedJSHeapSize<Math.min(m.jsHeapSizeLimit*.85,1.2e9)}catch(e){return true}};
+R.domElement.addEventListener('webglcontextlost',()=>{if(rec&&rec.state!=='inactive'){try{toast('حافظهٔ گرافیک از دست رفت؛ ویدیوی ضبط‌شده ذخیره می‌شود')}catch(e){}recStop()}},false);
 document.body.insertAdjacentHTML('beforeend','<div id="rect" class="g">● <span></span></div>');
 const rsec=()=>Math.floor((racc+(rt0?performance.now()-rt0:0))/1000),r2=n=>String(n).padStart(2,'0');
 function recStart(){
 if(!window.MediaRecorder||!R.domElement.captureStream)return toast('این مرورگر از ضبط ویدیو پشتیبانی نمی‌کند');
 const mt=RMT.find(t=>MediaRecorder.isTypeSupported(t));if(!mt)return toast('قالب ویدیو در این مرورگر پشتیبانی نمی‌شود');
 if(rUrl){URL.revokeObjectURL(rUrl);rUrl=''}
-const pr=LOW?1:Math.min(Math.max(devicePixelRatio||1,1.5),2.5),w=Math.floor(innerWidth*pr)&~1,h=Math.floor(innerHeight*pr)&~1; // وضوح بالاتر، ابعاد زوج برای انکودر
+const pr=LOW?1:MOB0?1.5:Math.min(Math.max(devicePixelRatio||1,1.5),2.5),w=Math.floor(innerWidth*pr)&~1,h=Math.floor(innerHeight*pr)&~1; // فاز ۰: موبایل حداکثر ۱٫۵ (پایداری ضبط)؛ دسکتاپ مثل قبل تا ۲٫۵؛ ابعاد زوج برای انکودر
 RC.on=1;R.setPixelRatio(1);R.setSize(w,h,false);
 let st,hc=null;try{hc=HUDM&&HUDM.createHudCapture(R.domElement,['#res','#tier','#quest','#cap','#nts'])}catch(e){hc=null}
 st=hc?hc.canvas.captureStream(RFPS):R.domElement.captureStream(RFPS);RCOMP=hc?hc.frame:null;const vt=st.getVideoTracks();rAud=null;
@@ -23,7 +28,8 @@ rec.onerror=()=>{toast('خطا در ضبط؛ آنچه ضبط شده ذخیره �
 rec.onstop=()=>recSave(mt);if(ui)document.body.classList.add('rch');
 rec.start(1000);racc=0;rt0=performance.now();
 (ui?$('brec2'):$('brec')).classList.add('rec');const el=$('rect');el.classList.add('on');el.lastChild.textContent='۰۰:۰۰';
-rtick=setInterval(()=>{const s=rsec();el.lastChild.textContent=fa(r2(s/60|0))+':'+fa(r2(s%60))},500);
+rtick=setInterval(()=>{const s=rsec();el.lastChild.textContent=fa(r2(s/60|0))+':'+fa(r2(s%60));
+ if(rec&&rec.state==='recording'&&!rHeapOK()){toast('حافظهٔ مرورگر رو به پرشدن است؛ ضبط ذخیره می‌شود');recStop()}},500); // محافظ heap (فاز ۰) — غیربصری، فقط حین ضبط فعال است
 if(!ui)toast('ضبط شروع شد؛ برای پایان دوباره روی 🎥 بزن')}
 async function recStartUI(){if(rec)return;
 if(!window.MediaRecorder||!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia))return toast('ضبط با رابط فقط روی کامپیوتر (کروم/اج) کار می‌کند');

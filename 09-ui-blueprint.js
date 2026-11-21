@@ -88,9 +88,11 @@ function bpTemplate(type,rot,mask,links,lamp=0,pathStyle=PATH_STYLE,cr=0){const 
   ring.rotation.x=-Math.PI/2;ring.position.y=.06;out.add(ring);out.userData.ring=ring;
   BP._tpl.set(key,out);return out}
 // حذف پلاک شمارهٔ خانه از شبح (عنصر نامربوط به پیش‌نمایش).
-// فقط صفحهٔ پلاک (texture کشِ _PLQ) حذف می‌شود؛ هالهٔ نورِ در (GRADT) جزو ظاهر واقعی ساختمان است و می‌ماند
-// تا ابعاد شبح با ساختمان نهایی یکسان بماند.
-function plaqueless(g){for(const c of[...g.children])if(c.isMesh&&c.material&&c.material.map&&_PLQ.has(c.material.map))g.remove(c)}
+// فقط رَستة حروف پلاک (متریال مشترک اطلس PLAQUE_MAT در 07-buildings-models.js) حذف می‌شود؛ قاب چوبی (متریال
+// معمولی) و هالهٔ نورِ در (GRADT) جزو ظاهر واقعی ساختمان می‌مانند تا ابعاد شبح با ساختمان نهایی یکسان بماند.
+// (رفع باگ «خونه نمیشه ساخت»: بازسازی پلاک در فاز ۲ کشِ قدیمی _PLQ را حذف کرد ولی این تابع هنوز به آن
+// ارجاع می‌داد ⇒ ReferenceError هنگام کلونِ هر شبح و مرگ کاملِ مود ساخت — هر دو حالت dev/باندل.)
+function plaqueless(g){for(const c of[...g.children])if(c.isMesh&&c.material===PLAQUE_MAT)g.remove(c)}
 // کلون امن قالب شبح: ring و کاشی اعتبار را از روی هندسهٔ مشخص پیدا می‌کند (clone در three.js userData را کپی سطحی می‌دهد)
 function bpClone(type,rot,mask,links,lamp=0,pathStyle=PATH_STYLE,cr=0){const src=bpTemplate(type,rot,mask,links,lamp,pathStyle,cr),g=src.clone(true);
   const ring=g.children.find(c=>c.geometry===BP_GEO),tile=g.children.find(c=>c.geometry===BP_PGEO);
@@ -179,7 +181,7 @@ function bpFloat(c){const isTile=BP.type==='road'||BP.type==='path';
   BP.ghost.userData.tileMesh.material.color.setHex(ok?BP_OK:BP_BAD);
   const occupied=val==='اشغال است'||val==='تداخل با پیش‌نمایش';
   const occ=occupied&&bpHit&&W.buildings.includes(bpHit)?bpHit:null;
-  const top=occ&&objs.get(occ.id)?(()=>{const bx=new THREE.Box3().setFromObject(objs.get(occ.id));return Math.max(.12,bx.max.y+.25)})():.06;
+  const top=occ&&objs.get(occ.id)?(()=>{const og=objs.get(occ.id),bb=og.userData.bb||new THREE.Box3().setFromObject(og);return Math.max(.12,bb.max.y+.25)})():.06;   // فاز ۲: سازهٔ چانک‌شده ← باکس کش‌شده
   BP.ghost.userData.ring.position.y=top;
   BP.ghost.children.forEach(ch=>{if(ch!==BP.ghost.userData.ring)ch.visible=!occupied});
   BP.ghost.visible=true;BP.ok=ok}
