@@ -4,7 +4,7 @@
 const MODES={move:'✋ جابه‌جایی: ساختمان را بکش و رها کن',build:'🏗️ نقشهٔ ساخت: شبح را بچین، بعد ✓ بزن تا همه ساخته شوند',rot:'🔄 چرخش: روی ساختمان بزن',del:'🗑️ حذف: روی ساختمان بزن',tl:'🚦 چراغ راهنمایی: روی سه‌راه/چهارراه (یا جادهٔ کنارش) بزن تا چراغ‌ها اعمال یا کلاً حذف شوند',name:'🏷️ نام مستعار: روی آدم بزن',say:'💬 پیام: روی آدم بزن'};
 // ── رابط
 document.body.insertAdjacentHTML('afterbegin','<div id="nts"></div>');
-document.body.insertAdjacentHTML('beforeend',`<div id="adm"><div class="btn e g" data-m="move" title="جابه‌جایی">✋</div><div class="btn e g" data-m="build" title="ساخت">🏗️</div><div class="btn e g" data-m="rot" title="چرخش">🔄</div><div class="btn e g" data-m="del" title="حذف">🗑️</div><div class="btn e g" data-m="tl" title="چراغ راهنمایی: اعمال/حذف روی تقاطع">🚦</div><div class="btn e g" data-m="name" title="نام مستعار">🏷️</div><div class="btn e g" data-m="say" title="پیام">💬</div><div class="btn e g" id="brec" title="ضبط ویدیو از بازی (انتخاب: تمام‌صفحه / با نوارها)">🎥</div><div class="btn e g" id="brec2" title="استودیوی سینمایی: حرکت‌های آماده + ضبط (کامپیوتر و موبایل)">🎬</div><div class="btn e g" id="btm" title="زمان">⏱️</div></div><div id="pal" class="g"><span data-t="house" class="on">🏠</span><span data-t="hq">🏢</span><span data-t="farm">🌾</span><span data-t="market">🏪</span><span data-t="road">🛣️</span><span data-t="path" title="پیاده‌رو">🚶</span><select id="pathStyle" title="طرح پیاده‌رو" style="display:none;padding:5px;border-radius:6px;background:#173b35;color:#fff;border:1px solid #789"><option value="stone">سنگی</option><option value="dirt">خاکی</option></select><span data-t="crossing" title="تابلوی عابر پیاده — کنار خیابان بگذار تا تابلو و خط‌کشی گذرگاه ساخته شود">🚸</span><span data-t="banner" title="تابلو بنری جلوی دفتر مدیرعامل — باید به دفتر بچسبد؛ متن شهر (اسم/مدیرعامل/تاریخ) را ادمین با کلیک روی تابلو می‌نویسد">🎌</span><span data-t="tree">🌲</span><label><input type="checkbox" id="fr" checked> رایگان</label></div><div id="md" class="g"><p id="mt"></p><input id="mi" maxlength="120"><div><button id="mok">تأیید</button><button id="mno">انصراف</button></div></div>`);
+document.body.insertAdjacentHTML('beforeend',`<div id="adm"><div class="btn e g" data-m="move" title="جابه‌جایی">✋</div><div class="btn e g" data-m="build" title="ساخت">🏗️</div><div class="btn e g" data-m="rot" title="چرخش">🔄</div><div class="btn e g" data-m="del" title="حذف">🗑️</div><div class="btn e g" data-m="tl" title="چراغ راهنمایی: اعمال/حذف روی تقاطع">🚦</div><div class="btn e g" data-m="name" title="نام مستعار">🏷️</div><div class="btn e g" data-m="say" title="پیام">💬</div><div class="btn e g" id="brec" title="ضبط ویدیو از بازی (انتخاب: تمام‌صفحه / با نوارها)">🎥</div><div class="btn e g" id="brec2" title="استودیوی سینمایی: حرکت‌های آماده + ضبط (کامپیوتر و موبایل)">🎬</div><div class="btn e g" id="btm" title="زمان">⏱️</div></div><div id="pal" class="g"><div id="palt"></div><div id="pali"></div><select id="pathStyle" title="طرح پیاده‌رو" style="display:none;padding:5px;border-radius:6px;background:#173b35;color:#fff;border:1px solid #789"><option value="stone">سنگی</option><option value="dirt">خاکی</option></select><label><input type="checkbox" id="fr" checked> رایگان</label></div><div id="md" class="g"><p id="mt"></p><input id="mi" maxlength="120"><div><button id="mok">تأیید</button><button id="mno">انصراف</button></div></div>`);
 $('side').insertAdjacentHTML('beforeend','<div id="bn" class="btn g" title="نمایش/پنهان نام‌ها"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.9 3.1-6.2 7-6.2s7 2.3 7 6.2"/></svg></div><div id="bm" class="btn g" title="قطع صدا"></div><div id="ba" class="btn g" title="ابزار مدیر"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg></div>');
 $('tier').insertAdjacentHTML('beforeend','<span id="clk"></span>');
 // ── ابزار مدیر (جابه‌جایی، ساخت، چرخش، حذف، نام، پیام)
@@ -23,7 +23,23 @@ if(m||admOn)toast(MODES[mode]||'حالت عادی')}
 const ray0=e=>{mp.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(mp,cam)};
 const cellOf=e=>{ray0(e);return ray.ray.intersectPlane(GP,gp3)?[Math.round(gp3.x/U),Math.round(gp3.z/U)]:null};
 const cellOk=(x,z,id)=>{const b=W.buildings.find(q=>q.id===id);return !!b&&fpCheck(b.type,x,z,b.rot||0,W.buildings.filter(o=>o.id!==id))===true};
-const gpt=e=>{ray0(e);return ray.ray.intersectPlane(GP,gp3)?[gp3.x,gp3.z]:null},isTile=t=>t==='road'||t==='path';
+const gpt=e=>{ray0(e);return ray.ray.intersectPlane(GP,gp3)?[gp3.x,gp3.z]:null},isTile=t=>t==='road'||t==='path'||t==='wall';   // مسیرها + دیوار شهر: استروک کشیدنی/زنجیره‌ای
+// ── پالت ساخت دسته‌بندی‌شده (مسکونی/اقتصادی/دفاعی/خدمات/تزئینی) — آیکون + هزینهٔ هر آیتم؛ هزینه‌ها از سرور (W.cost)
+// فاز ۲: کاخ سه‌سطحی در مسکونی (هم‌خانوادهٔ دفتر مدیرعامل) + پل رودخانه در خدمات (زیرساخت کنار جاده/پیاده‌رو).
+// فاز ۳: ساختمان‌های کاربردی — انبار/کارگاه/توربین/فروشگاه در اقتصادی (درآمدزا/پشتیبانی)، مدرسه/درمانگاه در خدمات، پارک در تزئینی.
+const BP_CATS=[['res','مسکونی',[['house','🏠'],['hq','🏢'],['palace1','🏰'],['palace2','🏛️'],['palace3','👑']]],
+               ['eco','اقتصادی',[['farm','🌾'],['market','🏪'],['workshop','🏭'],['warehouse','📦'],['mill','🌀'],['store','🏬']]],
+               ['def','دفاعی',[['wall','🧱'],['tower','🗼'],['gate','🚪']]],
+               ['srv','خدمات',[['road','🛣️'],['path','🚶'],['crossing','🚸'],['bridge','🌉'],['school','🏫'],['clinic','⚕️']]],
+               ['dec','تزئینی',[['tree','🌲'],['banner','🎌'],['park','⛲']]]];
+let BP_CAT='res',BP_CAT_DOM=0;
+function bpCostTag(c){return !c?'رایگان':c>=1e6?fa(c/1e6,1)+'م':c>=1e3?fa(c/1e3)+'ه':fa(c)}
+function bpFillItems(){const cat=BP_CATS.find(c=>c[0]===BP_CAT)||BP_CATS[0],el=$('pali');if(!el)return;
+ el.innerHTML=cat[2].map(([t,ic])=>`<span data-t="${t}" class="${t===BP.type?'on':''}" title="${(W&&W.catalog&&W.catalog[t])||t}${W&&W.cost&&W.cost[t]?' · '+fa(W.cost[t]/1e6,W.cost[t]>=1e6?1:0)+' میلیون تومان':''}">${ic}<i>${bpCostTag(W&&W.cost?W.cost[t]:null)}</i></span>`).join('')}
+function bpPalette(){if(!BP_CAT_DOM){BP_CAT_DOM=1;
+  $('palt').innerHTML=BP_CATS.map(([k,n])=>`<span data-c="${k}" class="${k===BP_CAT?'on':''}">${n}</span>`).join('');
+  const ps=$('pathStyle');if(ps){ps.style.display=BP.type==='path'?'inline-block':'none';ps.value=PATH_STYLE}}
+ bpFillItems()}
 // هدف زیر اشاره‌گر: جاده/پیاده‌رو ← سلول صحیح؛ بقیه ← مکان آزاد چسبیده به لبهٔ واقعی آیتم‌های دیگر. it = آیتم درحال جابه‌جایی (اختیاری)
 function tgtOf(e,it){const t=it?it.type:BP.type,p=gpt(e);if(!p)return null;const o=(it&&BP.down&&BP.down.off)||[0,0];
   return fpSnap(t,it?it.rot:BP.rot,p[0]+o[0],p[1]+o[1],W.buildings.concat(BP.items.filter(i=>i!==it)))}
@@ -41,7 +57,10 @@ const bpPick=e=>{const p=gpt(e);
   if(p){const cx=Math.round(p[0]/U),cz=Math.round(p[1]/U),t=BP.items.find(i=>isTile(i.type)&&i.x===cx&&i.z===cz);if(t)return t;
     for(let k=BP.items.length-1;k>=0;k--){const i=BP.items[k];if(!isTile(i.type)&&fpRects(i,FP_EMPTY).some(r=>p[0]>=r[0]&&p[0]<=r[1]&&p[1]>=r[2]&&p[1]<=r[3]))return i}}
   ray0(e);const hits=ray.intersectObjects(BP.items.filter(i=>i.g).map(i=>i.g),true);
-  for(const h of hits){let o=h.object;while(o&&!o.userData.it)o=o.parent;if(o)return o.userData.it}
+  // فقط مش‌ها — خط دورِ شبح (LineSegments) آستانهٔ ضخیمِ ریکست خط دارد (پیش‌فرض ۱ واحد!) و برای آیتم‌های
+  // بزرگ مثل پل، جعبهٔ خط‌دورش تا ~۱ واحد بیرون ردپا «لمس» می‌شود و تپ‌های اطراف (مثل جادهٔ فرود پل) را
+  // می‌بلعد؛ مدل/کاشی/حلقهٔ شبح همگی مش‌اند و انتخاب دقیق می‌ماند (باگ فاز ۲: تپ دوم روی پلِ انتخاب‌شده = حذف).
+  for(const h of hits){if(!h.object.isMesh)continue;let o=h.object;while(o&&!o.userData.it)o=o.parent;if(o)return o.userData.it}
   return null};
 const bpDown=e=>{const g0=gpt(e);if(!g0)return;ctl.enabled=false;const it=bpPick(e);BP.down={c:null,moved:0};
   if(it){BP.dragIt=it;BP.down.c=[it.x,it.z];if(!isTile(it.type))BP.down.off=[it.x*U-g0[0],it.z*U-g0[1]];bpGhostType()}   // درگ آیتم صف = جابه‌جایی دقیق
@@ -98,15 +117,17 @@ if(mode==='build'){
       else if(BP.sel===BP.dragIt)bpAfterChange();          // آیتم انتخاب‌شده که درگ شد هنوز انتخابی بماند
       BP.dragIt=null}
     else{const c=tgtOf(e);                               // پایان چیدن: رها کردن شبح یا پایان خطِ ردیف
-      if(BP.type==='road'||BP.type==='path'){if(c&&d.c)bpStroke(d.c[0],d.c[1],c[0],c[1])}
+      if(isTile(BP.type)){if(c&&d.c)bpStroke(d.c[0],d.c[1],c[0],c[1])}
       else if(c&&BP.ok!==false)bpAdd(c[0],c[1]);
       else if(d.c)bpAdd(d.c[0],d.c[1])}
-    if(BP.ghost)BP.ghost.visible=false;bpLine(null)}
+    if(BP.ghost)BP.ghost.visible=false;bpLine(null);const eb=$('bpe');if(eb)eb.textContent=''}
   return}
 if(was&&Math.hypot(e.clientX-was.x,e.clientY-was.y)<8&&performance.now()-was.t<500)onTap(e);if(activePointer===e.pointerId)unlockWorldInput()});
 $('adm').insertAdjacentHTML('afterbegin','<div class="btn e g" id="bap" title="پنل ادمین">🛠️</div>');$('bap').onclick=()=>openAP();
 $('adm').onclick=e=>{const m=e.target.closest('[data-m]');if(m)setMode(m.dataset.m)};
-$('pal').onclick=e=>{const s=e.target.closest('[data-t]');if(s){bt=s.dataset.t;BP.type=bt;$('pal').querySelectorAll('[data-t]').forEach(x=>x.classList.toggle('on',x===s));const ps=$('pathStyle');if(ps){ps.style.display=bt==='path'?'inline-block':'none';ps.value=PATH_STYLE}bpGhostType();if(BP.on)toast('قلم: '+(W.catalog[bt]||bt))}};
+$('pal').onclick=e=>{const ct=e.target.closest('[data-c]');
+ if(ct){BP_CAT=ct.dataset.c;$('palt').querySelectorAll('[data-c]').forEach(x=>x.classList.toggle('on',x===ct));bpFillItems();return}   // تعویض دستهٔ پالت
+ const s=e.target.closest('[data-t]');if(s){bt=s.dataset.t;BP.type=bt;$('pali').querySelectorAll('[data-t]').forEach(x=>x.classList.toggle('on',x===s));const ps=$('pathStyle');if(ps){ps.style.display=bt==='path'?'inline-block':'none';ps.value=PATH_STYLE}bpGhostType();if(BP.on)toast('قلم: '+(W.catalog[bt]||bt))}};
 const ps=$('pathStyle');if(ps){ps.value=PATH_STYLE;ps.onchange=()=>{setPathStyle(ps.value);toast('طرح پیاده‌رو: '+(PATH_STYLE==='dirt'?'خاکی':'سنگ‌فرش'))}};
 $('bn').classList.add('dim');$('bn').onclick=()=>{namesOn=!namesOn;$('bn').classList.toggle('dim',!namesOn);toast(namesOn?'نام‌ها نمایش داده می‌شود':'نام‌ها پنهان شد')};
 $('ba').onclick=async()=>{if(!T){const k=await ask('رمز مدیر (ADMIN_KEY)','',1);if(!k)return;try{const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k})}),j=await r.json();if(!r.ok)return toast(j.error||'رمز اشتباه است');T=localStorage.tk=j.token}catch(_){return toast('خطا در اتصال')}}setAdm(!admOn)};

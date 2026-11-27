@@ -23,16 +23,28 @@ U = CELL / GRID
 # Footprint sizes are integer sub-cells (width, depth); all placements use gx/gz.
 PATH_WIDTH_RATIO = 1 / 4
 FOOT = {"house": (6, 6), "hq": (8, 8), "farm": (8, 8), "market": (8, 6),
-        "tree": (2, 2), "road": (8, 8), "crossing": (2, 2), "banner": (6, 3)}
+        "tree": (2, 2), "road": (8, 8), "crossing": (2, 2), "banner": (6, 3),
+        "wall": (4, 4), "tower": (6, 6), "gate": (14, 6),
+        "bridge": (44, 8), "palace1": (16, 16), "palace2": (16, 16), "palace3": (16, 16),
+        "warehouse": (12, 10), "workshop": (10, 8), "mill": (8, 8),
+        "school": (14, 10), "clinic": (10, 8), "park": (12, 12), "store": (14, 12)}  # دفاعی: دیوار یک‌سلولی، برج، دروازهٔ روی جاده؛ فاز ۲: پل = ۴۴×۸ خرده‌سلول (۱۱×۲ واحد — کل حریم رود + فرود دو ساحل)، کاخ = ۱۶×۱۶ (۴×۴ واحد)؛ فاز ۳ کاربردی: انبار ۳×۲٫۵، کارگاه ۲٫۵×۲، توربین ۲×۲ (پروانهٔ پره‌ها)، مدرسه ۳٫۵×۲٫۵، درمانگاه ۲٫۵×۲، پارک ۳×۳ (قابل عبور)، فروشگاه ۳٫۵×۳ (واحد)
 _PATH_CELLS = max(1, math.ceil(FOOT["road"][0] * PATH_WIDTH_RATIO))
 FOOT["path"] = (_PATH_CELLS, _PATH_CELLS)
 GRID_TYPES = ("road", "path")
 FOOD_PRICE, FOOD_PER_PERSON, FARM_YIELD, MARKET_INCOME = 20000, 0.5, 10, 200000
+WORKSHOP_INCOME, MILL_INCOME, STORE_INCOME = 250_000, 300_000, 600_000  # درآمد روزانهٔ کارگاه (صناعت کوچک)، توربین بادی (برق فروشی)، فروشگاه بزرگ (تجارت) — تومان؛ مدرسه/درمانگاه/انبار/پارک درآمد مستقیم ندارند (خدمات/پشتیبانی)
 
 CATALOG = {"house": "خانه", "farm": "مزرعه", "market": "بازار", "road": "جاده", "path": "پیاده‌رو",
-           "crossing": "تابلوی عابر پیاده", "banner": "تابلو بنری", "tree": "درخت", "hq": "دفتر مدیرعامل"}
+           "crossing": "تابلوی عابر پیاده", "banner": "تابلو بنری", "tree": "درخت", "hq": "دفتر مدیرعامل",
+           "wall": "دیوار شهر", "tower": "برج نگهبانی", "gate": "دروازهٔ شهر",
+           "bridge": "پل رودخانه", "palace1": "کاخ سطح ۱", "palace2": "کاخ سطح ۲", "palace3": "کاخ سطح ۳",
+           "warehouse": "انبار", "workshop": "کارگاه", "mill": "توربین بادی",
+           "school": "مدرسه", "clinic": "درمانگاه", "park": "پارک شهری", "store": "فروشگاه بزرگ"}
 COST = {"house": 2_000_000, "farm": 1_500_000, "market": 3_000_000, "road": 100_000, "path": 50_000,
-        "crossing": 20_000, "banner": 0, "tree": 0, "hq": 5_000_000}  # تومان
+        "crossing": 20_000, "banner": 0, "tree": 0, "hq": 5_000_000, "wall": 80_000, "tower": 1_500_000, "gate": 2_000_000,
+        "bridge": 3_500_000, "palace1": 12_000_000, "palace2": 20_000_000, "palace3": 30_000_000,
+        "warehouse": 4_000_000, "workshop": 2_500_000, "mill": 2_000_000,
+        "school": 5_000_000, "clinic": 3_500_000, "park": 1_000_000, "store": 6_000_000}  # تومان
 # قوانین داستان (مطابق ویدیو): هر فالو = ۱ نفر + ۱ میلیون تومان به خزانه
 RULES = {"subscriber": {"pop": 1, "money": 1_000_000, "subs": 1}, "contribution": {"pop": 1, "money": 1_000_000}}
 TIERS = [(0, "قبیله"), (500, "روستا"), (5000, "شهر"), (50000, "کشور")]   # آستانه‌ها پیشنهادی‌اند؛ تغییرشان بده

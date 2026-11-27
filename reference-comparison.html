@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مرجع بصری — گسترش ساخت‌وساز (فاز ۱: دیوار، برج، دروازه)</title>
+<style>
+  :root{--ink:#0e2a26;--paper:#f4f1e8;--card:#ffffff;--line:#d8d2c2;--gold:#b8860b;--green:#2f7a4a;--red:#b03a2e}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Vazirmatn,Tahoma,sans-serif;background:var(--paper);color:var(--ink);line-height:1.9}
+  header{background:linear-gradient(135deg,#0e2a26,#14453c);color:#fff;padding:26px 22px 20px;text-align:center}
+  header h1{margin:0 0 6px;font-size:21px}
+  header p{margin:0;font-size:12.5px;opacity:.85}
+  .rule{max-width:1060px;margin:14px auto;padding:12px 18px;background:#fff8e6;border:1px solid #e6d69a;border-radius:12px;font-size:13.5px}
+  .rule b{color:var(--gold)}
+  .compare{display:flex;gap:14px;max-width:1060px;margin:0 auto 8px;padding:0 14px;align-items:stretch}
+  .pane{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 3px 14px rgba(20,50,40,.08)}
+  .pane .tag{display:flex;align-items:center;gap:8px;padding:10px 14px;font-weight:800;font-size:14px;color:#fff}
+  .pane.a .tag{background:var(--green)}
+  .pane.b .tag{background:#7a5a9a}
+  .pane .tag small{font-weight:400;opacity:.85;font-size:11px}
+  .pane img{width:100%;display:block;aspect-ratio:9/7;object-fit:cover;object-position:center}
+  .pane .cap{padding:10px 14px 12px;font-size:12px;opacity:.92;border-top:1px dashed var(--line)}
+  .pane .cap b{color:var(--green)}
+  .pane.b .cap b{color:#7a5a9a}
+  main{max-width:1060px;margin:0 auto;padding:10px 14px 30px}
+  h2{font-size:16px;border-right:5px solid var(--green);padding-right:10px;margin:26px 0 10px}
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;font-size:12.8px;box-shadow:0 2px 10px rgba(20,50,40,.06)}
+  th{background:#eef3ec;padding:9px 10px;font-size:12.5px}
+  th:nth-child(2){color:var(--green)}
+  th:nth-child(3){color:#7a5a9a}
+  th:nth-child(4){color:var(--gold)}
+  td{border-top:1px solid var(--line);padding:9px 10px;vertical-align:top}
+  td:first-child{font-weight:800;white-space:nowrap}
+  .sw{display:inline-block;width:11px;height:11px;border-radius:3px;border:1px solid rgba(0,0,0,.25);vertical-align:-1px;margin:0 2px}
+  .verdict{background:#eef7ef;border:1px solid #bcd9c4;border-radius:12px;padding:14px 18px;font-size:13.5px;margin-top:10px}
+  .verdict h3{margin:0 0 8px;font-size:14px;color:var(--green)}
+  .verdict ol{margin:0;padding-right:20px}
+  .verdict li{margin-bottom:5px}
+  footer{max-width:1060px;margin:0 auto;padding:0 14px 26px;font-size:11px;opacity:.7}
+  @media(max-width:760px){.compare{flex-direction:row;flex-wrap:wrap}.pane{flex:1 1 100%}}
+</style>
+</head>
+<body>
+<header>
+  <h1>مرجع بصری پروژه — گسترش بخش ساخت‌وساز (فاز ۱: دیوار + برج + دروازه)</h1>
+  <p>مقایسهٔ اجباری پیش از مدل‌سازی — منبع تصاویر و نتیجهٔ تحلیل ۵ بُعد</p>
+</header>
+
+<div class="rule">
+  <b>قانون نهایی:</b> مرجع <b>A (محیط واقعی بازی)</b> تعیین‌کنندهٔ ظاهر نهایی است (پالت رنگ، متریال، مقیاس، نور)؛
+  مرجع <b>B (تصویر الهام‌بخش)</b> فقط تعیین‌کنندهٔ <b>ایدهٔ معماری و ساختار</b> آیتم جدید است (فرم، حجم، تناسبات، نحوهٔ اتصال دیوار/برج/دروازه).
+  رنگ‌ها و متریال‌های B هرگز مستقیم به بازی منتقل نمی‌شوند.
+</div>
+
+<div class="compare">
+  <div class="pane a">
+    <div class="tag">🟢 مرجع A — محیط واقعی بازی (سمت راست) <small>اسکرین‌شات زندهٔ اجرای واقعی پروژه</small></div>
+    <img src="ref-A-real-game-day.png" alt="محیط واقعی بازی — روز">
+    <div class="cap"><b>منبع:</b> اجرای واقعی پروژه روی همین کد (سرور Flask + رندر three.js، اسکرین‌شات مرورگر) — تصویرسازی نیست.
+    خانه‌ها، بازار، دفتر مدیرعامل (HQ)، جادهٔ آسفالت با خط‌کشی، پیاده‌رو بتنی روشن، چراغ خیابان، تابلوی عابر و درخت‌ها مشخص‌اند.
+    نمای نزدیک‌تر: <i>ref-A2-real-game-closeup.png</i></div>
+  </div>
+  <div class="pane b">
+    <div class="tag">🟣 مرجع B — تصویر الهام‌بخش (سمت چپ) <small>الگوی معماری قلعه/دیوار/دروازه/پل</small></div>
+    <img src="ref-B-inspiration.jpg" alt="تصویر الهام‌بخش">
+    <div class="cap"><b>منبع:</b> تصویر ارسالی کاربر. از آن فقط <b>فرم و ساختار</b> برداشت می‌شود: دیوار زنجیره‌ای با کنگره،
+    برج گوشهٔ مجتمع با دیوار، دروازهٔ قوسی، پل باریک روی رود، سلسله‌مراتب حجمی قلعه. <b>رنگ و متریال آن ملاک نیست.</b></div>
+  </div>
+</div>
+
+<main>
+  <h2>مقایسهٔ پنج‌بُعدی (پیش از مدل‌سازی)</h2>
+  <table>
+    <tr><th>بُعد</th><th>مرجع A — بازی واقعی</th><th>مرجع B — الهام‌بخش</th><th>تصمیم طراحی برای آیتم‌های جدید</th></tr>
+    <tr>
+      <td>۱) پالت رنگ و متریال</td>
+      <td>دیوار خانه کرم/بژ روشن <span class="sw" style="background:#e8dfca"></span><span class="sw" style="background:#dccfb2"></span>؛
+      سقف آجری و خاکستری-آبی <span class="sw" style="background:#a3452f"></span><span class="sw" style="background:#5f7482"></span>؛
+      آسفالت تیره <span class="sw" style="background:#4a4d52"></span> با خط‌کشی روشن؛ پیاده‌رو سنگ‌فرش بتنی روشن با درز <span class="sw" style="background:#b9b8aa"></span>؛
+      HQ سفید مدرن <span class="sw" style="background:#e9e3d4"></span> با شیشه و جزئیات طلایی؛ پنجرهٔ گرم شب.</td>
+      <td>سنگ تیرهٔ قدیمی، سقف بنفش/کاهگلی، چوب کهنه، رنگ‌های تخته‌شده — فضای قرون‌وسطایی.</td>
+      <td>دیوار/برج/دروازه «مدرن‌شده»: بدنهٔ بتنی-سنگی روشن هم‌خانوادهٔ HQ و پیاده‌رو <span class="sw" style="background:#e9e2cf"></span><span class="sw" style="background:#cfc9ba"></span>،
+      درز و بند افقی مثل پیاده‌رو، سقف برج از پالت ROOF بازی، پرچم سبز شهر (هم‌رنگ بنر/HQ)، فانوس گرم شب مثل چراغ خیابان. <b>سنگ تیره و کاهگلی ممنوع.</b></td>
+    </tr>
+    <tr>
+      <td>۲) مقیاس و تناسبات</td>
+      <td>خانه ≈ ۱٫۵ واحد پهنا، ارتفاع کل ≈ ۱٫۵ (سقف هم‌ارتفاع دیوار)؛ HQ دوطبقه با تراس ≈ ۲٫۱؛ چراغ خیابان ≈ ۱٫۱؛ جاده ۲ واحد پهنا.</td>
+      <td>برج‌ها ۱:۲ تا ۱:۳ (پهنا:ارتفاع)، دیوار ۱٫۵–۲ برابر ارتفاع دیوارهٔ خانه، کنگره‌های درشت.</td>
+      <td>دیوار: ارتفاع ≈ ۰٫۹ + کنگره تا ≈ ۱٫۲ (کمی کوتاه‌تر از خانه — دیوار شهر مدرن، نه دژ)؛ ضخامت footprint یک واحد (۴ خرده‌سلول).
+      برج: ≈ ۲٫۴–۲٫۸ (کمی بلندتر از HQ، پادشاه افق). دروازه: دهانه دقیقاً ۲ واحد (عرض جاده) تا خودرو رد شود.</td>
+    </tr>
+    <tr>
+      <td>۳) زاویهٔ دوربین و فرم هندسی</td>
+      <td>ایزومتریک ~۴۵°/۳۵°؛ همهٔ فرم‌ها جعبه/هرم ساده با لبهٔ صاف؛ بدون استوانه؛ جزئیات کم‌حجم و خوانا.</td>
+      <td>هم‌جنس ایزومتریک؛ برج‌های منشوری مجتمع در دیوار؛ قوس نیم‌دایرهٔ دروازه؛ پل تخت با پایه‌های تکراری.</td>
+      <td>همان زبان جعبه‌ای: دیوار = تیغهٔ صاف + پايه، برج = مکعب پله‌ای + سقف هرمی، دروازه = دو حجم کناری + قوس نیم‌دایره روی جاده. الگوی «دیوار به برج می‌چسبد و برج از خط دیوار بالا می‌زند» از B.</td>
+    </tr>
+    <tr>
+      <td>۴) نورپردازی و سایه‌ها</td>
+      <td>سایهٔ نرم کوتاه؛ شب: پنجره‌های گرم (خودروَش با GLOW)، هالهٔ چراغ‌ها، نورهای نقطه‌ای استخر LAMP_LIGHTS روی نزدیک‌ترین چراغ‌ها.</td>
+      <td>سایه‌های بلند غروب؛ نور سرد.</td>
+      <td>شب‌ها دقیقاً مثل بقیهٔ شهر: پنجره‌های کوچک GLOW روی برج/دروازه، فانوس LAMP زیر قوس دروازه و سر برج (نقطهٔ نور به استخر lampPts اضافه می‌شود)، بدون نور اضافهٔ جدید.</td>
+    </tr>
+    <tr>
+      <td>۵) جزئیات تزئینی و سبک</td>
+      <td>گلدان گل، کرکرهٔ پنجره، تابلو، خط‌کشی و گذرگاه، تابلوی بنر سبز با حاشیهٔ طلایی، درز پیاده‌رو.</td>
+      <td>پرچم سر برج/دروازه، کنگرهٔ دندانه‌ای، قوس سنگی، پرچم دُم‌چلاری.</td>
+      <td>کنگرهٔ سادهٔ مدرن (دندانه‌های مستطیلی کم‌تعداد با فاصلهٔ منظم)، پرچم مستطیلی تاب‌خور با رنگ سبز/طلایی شهر، درزهای افقی بتنی، گل‌کاری کوچک پای دیوار — همه با متریال‌های موجود بازی.</td>
+    </tr>
+  </table>
+
+  <div class="verdict">
+    <h3>معیار پذیرش فاز ۱ (از دستور کار)</h3>
+    <ol>
+      <li>هر مدل جدید کنار جادهٔ آسفالت و خانه‌های فعلی گذاشته می‌شود و «غریبه» به نظر نمی‌رسد (رنگ/متریال/مقیاس از ستون تصمیم).</li>
+      <li>دیوار کشیدنی/زنجیره‌ای است، به همسایه وصل می‌شود (مستقیم/گوشه/T/چهارراه) و کنگره دارد؛ ضخامت ≈ یک سلول (۴ خرده‌سلول).</li>
+      <li>برج با سقف و پرچم تاب‌خور؛ دروازه روی دیوار قرار می‌گیرد و شهروند و خودرو از آن عبور می‌کنند (ردپای دروازه فقط دو پایهٔ کناری را اشغال می‌کند؛ سلول‌های جاده آزاد می‌مانند).</li>
+      <li>رندر تأیید در همان محیط واقعی بازی و در دو حالت روز و شب گرفته می‌شود.</li>
+    </ol>
+  </div>
+</main>
+
+<footer>
+  تصاویر: «ref-A-real-game-day.png» و «ref-A2-real-game-closeup.png» اسکرین‌شات مستقیم از اجرای واقعی همین پروژه‌اند (سرور Flask محلی + رندر WebGL مرورگر؛ دنیای نمایشی با خانه/بازار/HQ/جاده/پیاده‌رو/چراغ/تابلوی عابر که از API مدیر ساخته شد).
+  «ref-B-inspiration.jpg» تصویر ارسالی کاربر است. این صفحه پیش از هر طراحی یا کدنویسی تهیه شده است.
+</footer>
+</body>
+</html>

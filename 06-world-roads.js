@@ -99,14 +99,32 @@ function roadCrossingMask(road,signs){
  for(const sign of signs){const d=fpTouchDir(sign,road);if(d>=0)mask|=[4,8,1,2][d]}
  return mask;
 }
-function roads(w){const blds=w.buildings,rs=[],ps=[],cs=[];
- for(const b of blds){if(b.type==='road')rs.push(b);else if(b.type==='path')ps.push(b);else if(b.type==='crossing')cs.push(b)}
+// ── مجموعهٔ دفاعی (فاز گسترش ساخت‌وساز): ماسک اتصال دیوار = دیوار/برج/دروازهٔ چسبیده در چهار جهت (۱=شمال ۲=شرق ۴=جنوب ۸=غرب).
+// مستقیم/گوشه/T/چهارراه همه با همین ماسک ساخته می‌شود؛ برج و دروازهٔ تازه هم ماسک دیوارهای مجاور را عوض می‌کند.
+function wallMaskFor(b){let m=0;
+ for(const o of fpAdjacent(b)){if(o.type!=='wall'&&o.type!=='tower'&&o.type!=='gate')continue;
+  const d=fpTouchDir(b,o);if(d>=0)m|=1<<d}
+ return m}
+function roads(w){const blds=w.buildings,rs=[],ps=[],cs=[],ws=[],lg=[];
+ for(const b of blds){if(b.type==='road')rs.push(b);else if(b.type==='path')ps.push(b);else if(b.type==='crossing')cs.push(b);else if(b.type==='wall')ws.push(b);else if(b.type==='tower'||b.type==='gate'||b.type==='bridge'||b.type==='palace1'||b.type==='palace2'||b.type==='palace3')lg.push(b)}
  fpIndexEnsure(blds); // ایندکس مجاورت (فاز ۰): یک‌بار به‌ازای هر تغییر دنیا؛ ماسک‌ها/در/گذرگاه بدون حلقهٔ درجه‌دو و بدون کلید رشته‌ای
  const doorMask=fpDoorMask(blds); // عددی: کلید مرکز پیاده‌رو ← بیت‌های ضلعِ متصل به درِ سازه‌ها (همان مجموعهٔ fpDoorLinks)
 lampPts.length=0;
 // خط‌کشی گذرگاه فقط با «تابلوی عابر پیاده» ساخته می‌شود؛ پیاده‌رو دیگر خط‌کشی خودکار جاده را تغییر نمی‌دهد.
 for(const b of rs){const g=objs.get(b.id);if(!g)continue;const m=fpMaskFor(b,['road']),cr=fpCrossMaskFor(b);const lamp=((b.x+b.z)%2+2)%2===0?1:0;if(lamp)lampPts.push({x:b.x*U+.82,y:1.12+fpBaseY('road',b.x,b.z,0),z:b.z*U+.82});const k=m+'|'+cr+'|'+lamp;if(g.userData.k!==k){g.userData.k=k;if(typeof CH!=='undefined')CH.preRefresh(g);roadMesh(g,m,lamp,cr);if(typeof CH!=='undefined')CH.refresh(g)}}   // y چراغ = ارتفاع واقعی گروه جاده (fpBaseY — کنار رود هم دقیق); فاز ۲: تایل چانک‌شده ← ورودی‌های تازه
 for(const b of ps){const g=objs.get(b.id);if(!g)continue;const k=fpIdxKey(b.gx??b.x,b.gz??b.z),m=fpMaskFor(b,['path','road'])|(doorMask.get(k)||0),style=b.style==='dirt'?'dirt':b.style==='stone'?'stone':LEGACY_PATH_STYLE,sig=m+'|'+style;if(g.userData.k!==sig){g.userData.k=sig;if(typeof CH!=='undefined')CH.preRefresh(g);pathMesh(g,m,b.id,style);if(typeof CH!=='undefined')CH.refresh(g)}}
+// دیوار شهر: ماسک اتصال هر کاشی با ایندکس مجاورت ساخته و در صورت تغییر بازسازی می‌شود (الگوی roadMesh — با ورودی‌های چانک سازگار).
+// برج/دروازهٔ تازه/حذف‌شده هم ماسک دیوارهای چسبیده را عوض می‌کند ⇒ همهٔ دیوارها هر تغییر دنیا بازبینی می‌شوند (امضای عددی، فقط تغییر‌کردنی‌ها رندر مجدد).
+for(const b of ws){const g=objs.get(b.id);if(!g)continue;const m=wallMaskFor(b),k='w'+m;if(g.userData.k!==k){g.userData.k=k;if(typeof CH!=='undefined')CH.preRefresh(g);wallMesh(g,m);if(typeof CH!=='undefined')CH.refresh(g)}}
+// نقاط نور شب برج/دروازه/پل/کاخ (فانوس واقعی روی استخر LAMP_LIGHTS می‌نشیند؛ مثل چراغ خیابان فقط نزدیک‌ترین‌ها روشن می‌شوند)
+for(const b of lg){
+ if(b.type==='tower')lampPts.push({x:b.x*U,y:1.95+fpBaseY('tower',b.x,b.z,b.rot),z:b.z*U});
+ else if(b.type==='gate')lampPts.push({x:b.x*U,y:1.15+fpBaseY('gate',b.x,b.z,b.rot),z:b.z*U});
+ else if(b.type==='bridge'){const ax=((b.rot||0)%180)===0;   // چهار چراغ عرشه — مکان محلی با چرخش گروه به دنیا می‌رود (rot 90: (lx,lz)→(lz,−lx))
+  for(const[lx,lz]of[[-3.4,.74],[-1.2,-.74],[1.2,.74],[3.4,-.74]])lampPts.push({x:b.x*U+(ax?lx:lz),y:BRIDGE_Y(lx)+1.1,z:b.z*U+(ax?lz:-lx)})}
+ else{const a=(b.rot||0)*Math.PI/180,fx=Math.sin(a),fz=Math.cos(a);   // کاخ: جلوی ورودی + حیاط داخلی
+  lampPts.push({x:b.x*U+fx*1.1,y:.78,z:b.z*U+fz*1.1});
+  lampPts.push({x:b.x*U+fx*.45,y:1.3,z:b.z*U+fz*.45})}}
 // تابلوی عابر پیاده رو به جادهٔ مجاورش می‌ایستد (صفحهٔ تابلو عمود بر مسیر عابر)؛ تشخیص با همان fpTouchDir.
 for(const c of cs){const g=objs.get(c.id);if(!g)continue;let fx=0,fz=0;
  const r=fpFirstTouchRoad(c); // اولین جادهٔ چسبیده به ترتیب فهرست — همان رفتار «اولین rs» قبل

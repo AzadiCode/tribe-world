@@ -3,6 +3,7 @@
 import time, random, math
 from datetime import datetime, timezone
 from srv_config import (SIZE, CELL, GRID, U, FOOT, GRID_TYPES, DAY, FOOD_PRICE, FOOD_PER_PERSON, FARM_YIELD, MARKET_INCOME, TZ_NAME,
+                     WORKSHOP_INCOME, MILL_INCOME, STORE_INCOME,
                      CATALOG, COST, TIERS, GOALS, RES, WEATHER_TYPES, WEATHER_DEFAULT, runtime)
 from srv_db import lock, fetch, save
 
@@ -78,6 +79,8 @@ def fix_pond(d):
     """Move/remove items if any occupied sub-cell intersects the pond."""
     ch = False
     for b in list(d["buildings"]):
+        if b["type"] == "bridge":
+            continue          # پل عمداً روی رود می‌نشیند — سلول‌هایش داخل حریم رود طبیعی است (فاز ۲)
         cells = set().union(*rects_of(b, tiles_of(d["buildings"])))
         if not any(pond_world((cx + .5) * U, (cz + .5) * U) for cx, cz in cells):
             continue
@@ -85,7 +88,10 @@ def fix_pond(d):
         if b["type"] == "tree":
             d["buildings"].remove(b)
         else:
-            b["x"], b["z"] = free_cell(d, b["type"], b["id"])
+            try:                            # دروازه باید روی جاده بنشیند؛ اگر جای جای‌گذاری نبود (مثل درخت) حذف می‌شود تا حلقه نشکند
+                b["x"], b["z"] = free_cell(d, b["type"], b["id"])
+            except ValueError:
+                d["buildings"].remove(b); continue
             b["gx"], b["gz"] = b["x"], b["z"]
     return ch
 
@@ -170,17 +176,79 @@ def _base_cells(gx, gz, w, h):
 
 
 def rects_of(b, tiles=None):
-    """Return the exact occupied sub-cells. Paths own only their declared core footprint;
-    edge-to-edge connections are visual/navigation links, never extra footprint."""
+    """Return the exact occupied sub-cells (a list of cell-sets). Paths own only their declared core footprint;
+    edge-to-edge connections are visual/navigation links, never extra footprint.
+    دروازهٔ شهر فقط دو پایهٔ کناری را اشغال می‌کند (هرکدام ۳×عمق)؛ دهانهٔ ۸ خرده‌سلولی دقیقاً روی جاده می‌ماند
+    و سلول‌های جاده صاحب خودش می‌مانند — خودرو و شهروند از زیر قوس رد می‌شوند."""
     gx, gz, t = int(b.get("gx", b["x"])), int(b.get("gz", b["z"])), b["type"]
     w, h = _dims(t, b.get("rot", 0))
+    if t == "gate":
+        return _gate_parts(gx, gz, w, h)
     return [_base_cells(gx, gz, w, h)]
+
+
+def _gate_parts(gx, gz, w, h):
+    """دو پایهٔ ۳ خرده‌سلولی دو سر دهانه؛ دهانه = ۸ خرده‌سلول (عرض دقیق جاده).
+    توجه: مختصات گوشه‌ای است (x0,z0 + عرض) — مثل _base_cells مرکز‌محور نیست."""
+    x0, z0 = int(gx) - w // 2, int(gz) - h // 2
+    if w > h:      # طول در راستای x ← دهانهٔ عبور در راستای z (rot 0)
+        return [{(x, z) for x in range(x0, x0 + 3) for z in range(z0, z0 + h)},
+                {(x, z) for x in range(x0 + w - 3, x0 + w) for z in range(z0, z0 + h)}]
+    return [{(x, z) for x in range(x0, x0 + w) for z in range(z0, z0 + 3)},          # rot 90
+            {(x, z) for x in range(x0, x0 + w) for z in range(z0 + h - 3, z0 + h)}]
+
+
+# ── فاز ۲ — پل رودخانه: اسنپ دقیقاً عمود بر مسیر مستقیم رود (آینهٔ fpBridgeSnap در 07-buildings-footprint.js).
+# قانون: نزدیک‌ترین نقطهٔ پل روی چندخطی خام RIVER_POINTS (همهٔ بازوها محور‌ترازند)؛ نقطه باید حداقل ۶ واحد از
+# دو سرِ بازو فاصله داشته باشد (دور از پیچ فِلِت — کل عرشه داخل بخش مستقیم می‌ماند)؛ مختصات «در راستای رود»
+# به شبکهٔ ۸ خرده‌سلول (کاشی جاده) می‌چسبد تا گره‌های خودروی روی عرشه دقیقاً به کاشی‌های جادهٔ دو ساحل بچسبند.
+# گرد کردن = floor(v+0.5) در هر دو طرف (round پایتون banker's است و با Math.round جاوااسکریپت می‌شکند).
+BRIDGE_REACH = 8.0   # حداکثر فاصلهٔ نقطهٔ رهاکردن تا رود برای فعال‌شدن اسنپ (واحد دنیا)
+BRIDGE_SPAN = 6.0    # حداقل فاصلهٔ مرکز پل از پیچ رود (واحد دنیا)
+
+
+def bridge_snap(gx, gz):
+    """(cx, cz, rot) = مرکز/چرخش کانونی پل روی رود؛ None = اینجا پل نمی‌شود (دور از رود یا داخل پیچ).
+    rot=۰ → عرشه در راستای x (رود عمودی)؛ rot=۹۰ → عرشه در راستای z (رود افقی)."""
+    px, pz = float(gx) * U, float(gz) * U
+    best = None
+    for i in range(1, len(RIVER_POINTS)):
+        a, b = RIVER_POINTS[i - 1], RIVER_POINTS[i]
+        dx, dz = b[0] - a[0], b[1] - a[1]
+        dd = dx * dx + dz * dz
+        u = 0.0 if dd <= 0 else max(0.0, min(1.0, ((px - a[0]) * dx + (pz - a[1]) * dz) / dd))
+        qx, qz = a[0] + u * dx, a[1] + u * dz
+        d = math.hypot(px - qx, pz - qz)
+        if best is None or d < best[0]:
+            best = (d, a, b, qx, qz)
+    if not best or best[0] > BRIDGE_REACH:
+        return None
+    _, a, b, qx, qz = best
+    hor = abs(b[0] - a[0]) > abs(b[1] - a[1])          # رود افقی ← عبور پل در راستای z
+    along = qx if hor else qz
+    along8 = _cell_round(along / U / 8) * 8              # جانبی = شبکهٔ کاشی جاده (۸ خرده‌سلول)
+    if hor:
+        cx, cz, rot = along8, _cell_round(qz / U), 90
+    else:
+        cx, cz, rot = _cell_round(qx / U), along8, 0
+    X, Z = cx * U, cz * U
+    if math.hypot(X - a[0], Z - a[1]) < BRIDGE_SPAN or math.hypot(X - b[0], Z - b[1]) < BRIDGE_SPAN:
+        return None
+    return int(cx), int(cz), rot
+
+
+def _cells_of(b, tiles=None):
+    """اتحاد همهٔ مجموعه‌سلول‌های rects_of — برای سازه‌های چندپاره (دروازه) و تک‌تکه یکسان کار می‌کند."""
+    out = set()
+    for s in rects_of(b, tiles):
+        out |= s
+    return out
 
 
 def _occupied(blds):
     occ = {}
     for b in blds:
-        for cell in rects_of(b)[0]:
+        for cell in _cells_of(b):
             occ.setdefault(cell, b)
     return occ
 
@@ -190,11 +258,25 @@ def check_place(d, t, x, z, rot=0, ignore=None, extra=()):
     rot = 0 if t in GRID_TYPES else (int(round(int(rot or 0) / 90)) * 90) % 360
     others = [b for b in list(d["buildings"]) + list(extra) if b.get("id") != ignore]
     cand = {"type": t, "gx": gx, "gz": gz, "x": gx, "z": gz, "rot": rot}
-    cells = rects_of(cand)[0]
+    cells = _cells_of(cand)
     if any(cx < LO or cx > HI or cz < LO or cz > HI for cx, cz in cells):
         raise ValueError("خارج از نقشه")
-    if any(pond_world((cx + .5) * U, (cz + .5) * U) for cx, cz in cells):
-        raise ValueError("اینجا حریم رودخانه است")
+    if t != "bridge" and any(pond_world((cx + .5) * U, (cz + .5) * U) for cx, cz in cells):
+        raise ValueError("اینجا حریم رودخانه است")   # پل تنها استثناست: روی رود می‌نشیند (اعتبارسنجی جای آن در ادامه)
+    if t == "gate":
+        # دروازه باید دقیقاً روی کاشی جاده بنشیند و جاده از آن عبور کند (دهانه روی آسفالت، نه چمن)
+        roads = {(int(r.get("gx", r["x"])), int(r.get("gz", r["z"]))) for r in others if r.get("type") == "road"}
+        if (gx, gz) not in roads:
+            raise ValueError("دروازه باید روی کاشی جاده بنشیند")
+        if not any((gx + dx, gz + dz) in roads for dx, dz in ((8, 0), (-8, 0), (0, 8), (0, -8))):
+            raise ValueError("جاده باید از دروازه عبور کند")
+    if t == "bridge":
+        # پل: فقط عمود بر رود، روی نقطهٔ کانونی بخش مستقیم (هم‌ارزِ اسنپ فرانت — fpBridgeSnap)
+        snap = bridge_snap(gx, gz)
+        if not snap:
+            raise ValueError("پل باید روی بخش مستقیم رودخانه باشد")
+        if tuple(snap) != (gx, gz, rot):
+            raise ValueError("پل فقط عمود بر رودخانه، روی نقطهٔ کانونی آن می‌نشیند")
     occ = _occupied(others)
     if cells.intersection(occ):
         raise ValueError("با ساختمان دیگری برخورد دارد")
@@ -202,6 +284,25 @@ def check_place(d, t, x, z, rot=0, ignore=None, extra=()):
 
 
 def free_cell(d, t, ignore=None):
+    if t == "bridge":
+        # پل فقط روی نقاط کانونی رود می‌نشیند (اسنپ عمود بر مسیر) — اسکن عمومی هرگز جواب نمی‌دهد؛
+        # همهٔ نقاط کانونیِ بخش‌های مستقیم، به ترتیب مسیر، آزموده می‌شوند.
+        for i in range(1, len(RIVER_POINTS)):
+            a, b = RIVER_POINTS[i - 1], RIVER_POINTS[i]
+            hor = abs(b[0] - a[0]) > abs(b[1] - a[1])
+            a0, b0 = (a[0], b[0]) if hor else (a[1], b[1])
+            lo, hi = sorted((_cell_round(a0 / U / 8) * 8, _cell_round(b0 / U / 8) * 8))
+            for along8 in range(lo, hi + 1, 8):
+                cx, cz = (along8, _cell_round(a[1] / U)) if hor else (_cell_round(a[0] / U), along8)
+                snap = bridge_snap(cx, cz)          # منبع واحد حقیقت: نقطهٔ کانونی + چرخش
+                if not snap or (snap[0], snap[1]) != (cx, cz):
+                    continue
+                try:
+                    check_place(d, t, cx, cz, snap[2], ignore)
+                except ValueError:
+                    continue
+                return cx, cz
+        raise ValueError("جایی خالی نیست")
     for r in range(0, SIZE * GRID * 2):
         for gx in range(-r, r + 1):
             for gz in range(-r, r + 1):
@@ -254,6 +355,8 @@ def tick(d):
     c, s = counts(d), d["stats"]
     for _ in range(n):
         s["food"] += c.get("farm", 0) * FARM_YIELD; s["money"] += c.get("market", 0) * MARKET_INCOME
+        # فاز ۳ — درآمد ساختمان‌های کاربردی: کارگاه (صناعت)، فروشگاه بزرگ (تجارت)، توربین بادی (برق فروشی)
+        s["money"] += c.get("workshop", 0) * WORKSHOP_INCOME + c.get("store", 0) * STORE_INCOME + c.get("mill", 0) * MILL_INCOME
         need = s["pop"] * FOOD_PER_PERSON
         if s["food"] >= need: s["food"] -= need
         else:                                              # کمبود غذا: خرید از خزانه

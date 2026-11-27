@@ -17,7 +17,11 @@
 //  • واپس‌زنی امن: نوع ادغام‌نشدنی (hq/بنر)، خانهٔ باز، یا هر خطای ادغام ← همان مسیر زندهٔ قبلی.
 'use strict';
 const CHU=16;                                     // ضلع چانک (واحد دنیا) — نقشهٔ ±۴۰ ⇒ ۶×۶ چانک
-const CH_MERGE={road:1,path:1,crossing:1,tree:1,farm:1,market:1,house:1};
+// wall در چانک ادغام می‌شود (تعداد زیاد، بدون انیمیشن — الگوی جاده). برج/دروازه مثل hq/بنر «زنده» می‌مانند:
+// تعدادشان کم است، پرچم تاب‌خور (userData.flg) و فانوس‌های LHALO فقط روی گروه زنده انیمیت می‌شوند.
+const CH_MERGE={road:1,path:1,crossing:1,tree:1,farm:1,market:1,house:1,wall:1,warehouse:1,workshop:1,school:1,clinic:1,park:1,store:1};
+// فاز ۳: کاربردی‌های ایستا هم ادغام می‌شوند (همه VC/متریال‌سطل‌اند، بدون پرچم/اسپرایت/انیمیشن)؛
+// توربین بادی هرگز — پروانهٔ چرخانش (userData.rotors) فقط روی گروه زنده انیمیت می‌شود (الگوی برج/دروازه).
 // ── سطل‌های متریال VC: کلید «S|F + زبری» ← متریال مشترک (رنگ در رأس‌ها؛ ظاهر عین متریال اصلی)
 const CH_BUCKETS=new Map();
 function chBucketMat(k){let m=CH_BUCKETS.get(k);if(!m){m=new THREE.MeshStandardMaterial({vertexColors:true,roughness:+k.slice(1),flatShading:k[0]==='F'});CH_BUCKETS.set(k,m)}return m}

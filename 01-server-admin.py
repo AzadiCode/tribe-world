@@ -5,7 +5,7 @@ from flask import Blueprint, request, jsonify
 import time
 from srv_auth import admin_only
 from srv_config import CATALOG, COST, RULES, GOALS, FOOT, U, GRID_TYPES, WEATHER_TYPES, WEATHER_DEFAULT, WEATHER_FA
-from srv_world import mutate, free_cell, check_place, log_event, apply_delta, rects_of, tiles_of
+from srv_world import mutate, free_cell, check_place, log_event, apply_delta, rects_of, tiles_of, bridge_snap, _cell_round
 
 bp = Blueprint("admin", __name__)
 
@@ -58,10 +58,19 @@ def add_building():
 
 
 def auto_rot(d, t, x, z, rot=None, extra=(), auto=False):
-    """Orient house/HQ toward the closest adjacent occupied road/path cell."""
+    """Orient house/HQ toward the closest adjacent occupied road/path cell.
+    دروازهٔ شهر همیشه خودکار روی محور جاده می‌نشیند: همسایهٔ جاده در راستای x ← دهانه به سمت x (rot 90)؛ وگرنه z (rot 0).
+    پل رودخانه هم فقط چرخش کانونیِ اسنپ را می‌پذیرد (عمود بر رود) — فاز ۲."""
     r = int(rot or 0) % 360
-    if t not in ("house", "hq") or (rot is not None and not auto):
-        return r
+    if t == "gate":
+        roads = {(int(b.get("gx", b["x"])), int(b.get("gz", b["z"]))) for b in list(d["buildings"]) + list(extra) if b.get("type") == "road"}
+        return 90 if ((int(x) - 8, int(z)) in roads or (int(x) + 8, int(z)) in roads) else 0
+    if t == "bridge":
+        s = bridge_snap(_cell_round(float(x)), _cell_round(float(z)))
+        return s[2] if s else 0
+    if t not in ("house", "hq", "palace1", "palace2", "palace3",
+                 "warehouse", "workshop", "school", "clinic", "park", "store") or (rot is not None and not auto):
+        return r   # فاز ۳: ساختمان‌های کاربردی (به‌جز توربین متقارن) هم ورودی‌شان رو به نزدیک‌ترین جاده/پیاده‌رو می‌چرخد — مثل خانه/دفتر
     roads = [b for b in list(d["buildings"]) + list(extra) if b["type"] in ("road", "path")]
     if not roads:
         return r

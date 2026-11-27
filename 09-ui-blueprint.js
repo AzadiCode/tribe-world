@@ -19,7 +19,7 @@ const bpInPond=(x,z)=>filletDist(x*U,z*U)<4.4;   // دقیقاً هم‌مرزِ
 const inMap=(x,z)=>x>=-20*GRID&&x<20*GRID&&z>=-20*GRID&&z<20*GRID;
 // ── اعتبارسنجی لایه‌دار: خروجی true یا دلیل خطا (رشته). مجاورت هرگز خطا نیست؛ فقط همپوشانیِ هم‌لایه، برکه و خارج نقشه.
 let bpHit=null;
-function bpVal(type,x,z,skip,rot){bpHit=null;if(rot==null)rot=(type==='road'||type==='path')?0:BP.rot;
+function bpVal(type,x,z,skip,rot){bpHit=null;if(rot==null)rot=(type==='road'||type==='path'||type==='wall')?0:BP.rot;
   const r=fpCheck(type,x,z,rot,W.buildings.concat(BP.items.filter(i=>i!==skip)));
   if(r==='برخورد'){bpHit=fpHit;return BP.items.includes(fpHit)?'تداخل با پیش‌نمایش':'اشغال است'}
   if(r!==true)return r;
@@ -28,6 +28,14 @@ function bpVal(type,x,z,skip,rot){bpHit=null;if(rot==null)rot=(type==='road'||ty
    if(![...W.buildings,...BP.items.filter(i=>i!==skip)].some(o=>o.type==='road'&&fpTouchDir(cand,o)>=0))return'تابلو باید کنار خیابان باشد'}
   if(type==='banner'){const cand={type,x,z,gx:x,gz:z,rot:rot||0};
    if(![...W.buildings,...BP.items.filter(i=>i!==skip)].some(o=>o.type==='hq'&&fpTouchDir(cand,o)>=0))return'بنر باید به دفتر مدیرعامل بچسبد'}
+  if(type==='gate'){ // دروازه: باید دقیقاً روی کاشی جاده بنشیند و جاده از آن عبور کند (آینهٔ check_place سرور)
+   const all=[...W.buildings,...BP.items.filter(i=>i!==skip)],has=(a,b)=>all.some(o=>o.type==='road'&&(o.gx??o.x)===a&&(o.gz??o.z)===b);
+   if(!all.some(o=>o.type==='road'&&(o.gx??o.x)===x&&(o.gz??o.z)===z))return'دروازه باید روی کاشی جاده بنشیند';
+   if(!(has(x+8,z)||has(x-8,z)||has(x,z+8)||has(x,z-8)))return'جاده باید از دروازه عبور کند'}
+  if(type==='bridge'){ // پل: فقط روی نقطهٔ کانونی بخش مستقیم رود، عمود بر آن (آینهٔ check_place/bridge_snap سرور)
+   const s=fpBridgeSnap(x,z);if(!s)return'پل باید روی بخش مستقیم رودخانه باشد';
+   const rn=(Math.round((rot||0)/90)*90)%360;
+   if(s[0]!==x||s[1]!==z||s[2]!==rn)return'پل فقط عمود بر رودخانه، روی نقطهٔ کانونی آن می‌نشیند'}
   return true}
 const bpFree=(x,z,skip)=>bpVal(BP.type,x,z,skip,BP.rot)===true;
 // ── شبحِ مدل واقعی: مدل کامل ساخته می‌شود، همهٔ مش‌ها در یک مش ادغام و با متریال شبح رندر می‌شوند (۱ دراکال)
@@ -38,8 +46,9 @@ function bpMask(t,x,z){let m=0;const candidate={type:t,x,z,gx:x,gz:z,rot:0},all=
   for(const b of all){if(t==='road'?b.type!=='road':(b.type!=='road'&&b.type!=='path'))continue;
     const d=fpTouchDir(candidate,b);if(d>=0)m|=1<<d}
   return m}
-// چرخش خودکار خانه/دفتر؛ فاصله تا مستطیل مسیر با محاسبهٔ بازه‌ها، بدون ساختن آرایهٔ همهٔ سلول‌ها.
-function bpAutoRot(type,x,z,rot,others){if(type!=='house'&&type!=='hq')return rot;
+// چرخش خودکار خانه/دفتر/کاخ + ساختمان‌های کاربردی فاز ۳ (توربین متقارن است و نمی‌خواهد)؛ فاصله تا مستطیل مسیر با محاسبهٔ بازه‌ها، بدون ساختن آرایهٔ همهٔ سلول‌ها.
+const BP_AUTO=['house','hq','palace1','palace2','palace3','warehouse','workshop','school','clinic','park','store'];
+function bpAutoRot(type,x,z,rot,others){if(!BP_AUTO.includes(type))return rot;
  const dirs=[[0,1,0],[1,0,90],[0,-1,180],[-1,0,270]],gap=(v,a,b)=>v<a?a-v:v>b?v-b:0,span=(a0,a1,b0,b1)=>Math.max(0,b0-a1,a0-b1);let best=Infinity,angle=rot;
  for(const[dx,dz,turn]of dirs){const B=fpBounds({type,gx:x,gz:z,x,z,rot:turn});let edge,dist=Infinity;
   if(dz>0)edge=['z',B.z1+1];else if(dz<0)edge=['z',B.z0-1];else if(dx>0)edge=['x',B.x1+1];else edge=['x',B.x0-1];
@@ -51,6 +60,19 @@ function bpAutoRot(type,x,z,rot,others){if(type!=='house'&&type!=='hq')return ro
  return best<Infinity?angle:rot}
 // ماسک پیاده‌رو از تماس واقعیِ مسیرها + ضلعِ ورودیِ ساختمان به دست می‌آید.
 function bpPathMask(x,z){const candidate={type:'path',x,z,gx:x,gz:z,rot:0},all=W.buildings.concat(BP.items);return{m:bpMask('path',x,z)|fpDoorMaskForPath(candidate,all)}}
+// ماسک اتصال دیوار شهر (مجموعهٔ دفاعی): دیوار/برج/دروازهٔ چسبیده در چهار جهت — مستقیم/گوشه/T/چهارراه.
+function bpWallMask(x,z){const c={type:'wall',x,z,gx:x,gz:z,rot:0};let m=0;
+  for(const b of W.buildings.concat(BP.items)){if(b.type!=='wall'&&b.type!=='tower'&&b.type!=='gate')continue;
+    const d=fpTouchDir(c,b);if(d>=0)m|=1<<d}
+  return m}
+// جای دقیق دروازه: نزدیک‌ترین کاشی جاده (شعاع ۱۰ خرده‌سلول) + چرخش خودکار روی محور جاده (آینهٔ auto_rot سرور).
+function bpGateSnap(x,z){const all=W.buildings.concat(BP.items.filter(i=>i.type==='road'));
+  let best=null;
+  for(const r of all){if(r.type!=='road')continue;const d=Math.abs((r.gx??r.x)-x)+Math.abs((r.gz??r.z)-z);
+    if(d<=10&&(!best||d<best.d))best={d,r}}
+  if(!best)return null;
+  const gx=best.r.gx??best.r.x,gz=best.r.gz??best.r.z,has=(a,b)=>all.some(o=>o.type==='road'&&(o.gx??o.x)===a&&(o.gz??o.z)===b);
+  return[gx,gz,has(gx+8,gz)||has(gx-8,gz)?90:0]}
 // ماسک گذرگاه برای یک کاشی جاده: از تابلوی عابر پیادهٔ واقعی و پیش‌نمایشِ صف (مثل roads.js).
 function bpCrossMask(x,z,skip){const road={type:'road',x,z,gx:x,gz:z,rot:0},signs=[...W.buildings,...BP.items].filter(b=>b.type==='crossing'&&b!==skip);
  return signs.length?roadCrossingMask(road,signs):0}
@@ -61,7 +83,7 @@ function bpTemplate(type,rot,mask,links,lamp=0,pathStyle=PATH_STYLE,cr=0){const 
   const g=new THREE.Group();
   if(type==='road'){roadMesh(g,mask,lamp,cr);g.userData.tile=1}
   else if(type==='path'){const lk=links||{m:mask};pathMesh(g,lk.m,1234,pathStyle);g.userData.tile=1}
-  else{build[type]?.(g,{id:type==='tree'||type==='hq'?7:1234+(rot/90|0),x:0,z:0,rot});if(type!=='tree'&&type!=='hq')plaqueless(g)}
+  else{build[type]?.(g,{id:type==='tree'||type==='hq'?7:1234+(rot/90|0),x:0,z:0,rot},mask);if(type!=='tree'&&type!=='hq')plaqueless(g)}
   // ادغام کل مدل به یک مش شفاف + ذخیرهٔ bbox برای خط دور
   g.updateMatrixWorld(true);   // گروه در صحنه نیست؛ بدون این، ماتریس‌های فرزندان stale می‌مانند و هندسه جای غلط ادغام می‌شود
   // نرمال‌سازی صفات هندسه‌ها قبل از ادغام: همه باید position+normal+color داشته باشند و uv نداشته باشند
@@ -103,7 +125,7 @@ function bpClone(type,rot,mask,links,lamp=0,pathStyle=PATH_STYLE,cr=0){const src
 function bpMake(it,paint=true){const links=it.type==='path'&&!BP._batch?bpPathMask(it.x,it.z):null;
   const lamp=it.type==='road'?(((it.x+it.z)%2+2)%2===0?1:0):0;   // چراغ جاده = پریتی سلول، مثل roads()
   const cr=it.type==='road'?bpCrossMask(it.x,it.z):0;            // خط‌کشی گذرگاه از تابلوی عابر پیادهٔ مجاور
-  const mask=links?links.m:(it.type==='road'?bpMask(it.type,it.x,it.z):0);
+  const mask=links?links.m:(it.type==='road'?bpMask(it.type,it.x,it.z):it.type==='wall'?bpWallMask(it.x,it.z):0);
   const g=bpClone(it.type,it.rot,mask,links,lamp,PATH_STYLE,cr);
   g.userData.it=it;
   g.position.set(it.x*U,fpBaseY(it.type,it.x,it.z,it.rot),it.z*U);   // نشستن روی زمین واقعی (کنار رود روی جالیِ ساحل)
@@ -120,18 +142,23 @@ function bpPaint(it){if(!it.g)return;const val=bpVal(it.type,it.x,it.z,it,it.rot
   it.g.children.forEach(ch=>{if(ch!==ring)ch.visible=!occupied})}
 // چیدن/حذف/جابه‌جایی
 function bpAdd(x,z){if(BP.items.length>=400)return toast('حداکثر ۴۰۰ مورد در یک نقشه');
-  const ar=(BP.type==='house'||BP.type==='hq')&&!BP.manualRot,others=W.buildings.concat(BP.items),rot=(BP.type==='road'||BP.type==='path')?0:ar?bpAutoRot(BP.type,x,z,BP.rot,others):BP.rot;
+  let gr=null;                                                    // دروازه/پل: نزدیک‌ترین کاشی جاده / نقطهٔ کانونی رود + چرخش خودکار
+  if(BP.type==='gate'){const s=bpGateSnap(x,z);if(!s)return false;x=s[0];z=s[1];gr=s[2]}
+  if(BP.type==='bridge'){const s=fpBridgeSnap(x,z);if(!s)return false;x=s[0];z=s[1];gr=s[2]}
+  const ar=BP_AUTO.includes(BP.type)&&!BP.manualRot,others=W.buildings.concat(BP.items),rot=gr!=null?gr:(BP.type==='road'||BP.type==='path'||BP.type==='wall')?0:ar?bpAutoRot(BP.type,x,z,BP.rot,others):BP.rot;
   if(bpVal(BP.type,x,z,null,rot)!==true)return false;
   const it={type:BP.type,x,z,rot,ar,...(BP.type==='path'?{style:PATH_STYLE}:{})};
   bpMake(it,!BP._batch);BP.items.push(it);if(!BP._batch){bpRemesh(it);bpAfterChange()}return true}
 function bpRemove(it){if(!it)return;if(it.g){scene.remove(it.g);disposeObj(it.g);it.g=null}
   BP.items.splice(BP.items.indexOf(it),1);if(BP.sel===it)BP.sel=null;
   bpRemesh(it);bpAfterChange()}
-function bpMove(it,x,z){const old={...it},others=W.buildings.concat(BP.items.filter(o=>o!==it)),rot=it.ar?bpAutoRot(it.type,x,z,it.rot,others):it.rot;
+function bpMove(it,x,z){const old={...it},others=W.buildings.concat(BP.items.filter(o=>o!==it));let rot=it.ar?bpAutoRot(it.type,x,z,it.rot,others):it.rot;
+  if(it.type==='gate'){const s=bpGateSnap(x,z);if(!s){bpPaint(it);return false}x=s[0];z=s[1];rot=s[2]}
+  if(it.type==='bridge'){const s=fpBridgeSnap(x,z);if(!s){bpPaint(it);return false}x=s[0];z=s[1];rot=s[2]}
   if(it.x===x&&it.z===z&&it.rot===rot){bpPaint(it);return true}
   const val=bpVal(it.type,x,z,it,rot);if(val!==true){bpPaint(it);return false}
   it.x=x;it.z=z;it.rot=rot;it.g.position.set(x*U,fpBaseY(it.type,x,z,rot),z*U);it.g.rotation.y=rot*Math.PI/180;bpRemesh(it,old);bpPaint(it);bpAfterChange();return true}
-function bpRot(it){if(it.type==='road'||it.type==='path')return;
+function bpRot(it){if(it.type==='road'||it.type==='path'||it.type==='wall'||it.type==='gate'||it.type==='tower'||it.type==='bridge')return;   // مسیرها/دیوار خودکار وصل می‌شوند؛ دروازه روی محور جاده، برج متقارن و پل عمود بر رود می‌نشیند
   const old={...it};it.rot=(it.rot+90)%360;it.ar=false;it.g.rotation.y=it.rot*Math.PI/180;bpRemesh(it,old);bpPaint(it)}
 function bpAfterChange(){const all=W.buildings.concat(BP.items);let reoriented=false;
   for(const it of BP.items){if(it.ar){const rot=bpAutoRot(it.type,it.x,it.z,it.rot,all.filter(o=>o!==it));if(rot!==it.rot){it.rot=rot;reoriented=true;if(it.g)it.g.rotation.y=rot*Math.PI/180}}}
@@ -140,22 +167,22 @@ function bpAfterChange(){const all=W.buildings.concat(BP.items);let reoriented=f
   for(const it of BP.items)bpPaint(it);bpBar()}
 // ── اتصال زندهٔ کاشی‌ها: با هر تغییر، ماسک همسایگیِ همهٔ کاشی‌های مجاور دوباره ساخته می‌شود (مسیر پیوسته همیشه درست)
 function bpRemesh(changed,old=changed){
-  const tiles=BP.items.filter(it=>it.type==='road'||it.type==='path'),near=new Set();
+  const tiles=BP.items.filter(it=>it.type==='road'||it.type==='path'||it.type==='wall'),near=new Set();
   if(tiles.includes(changed))near.add(changed);
   for(const it of tiles){if(it===changed)continue;if(fpTouchDir(it,changed)>=0||fpTouchDir(it,old)>=0)near.add(it)}
   for(const it of near){
     const links=it.type==='path'?bpPathMask(it.x,it.z):null;
     const lamp=it.type==='road'?(((it.x+it.z)%2+2)%2===0?1:0):0;
     const cr=it.type==='road'?bpCrossMask(it.x,it.z):0;
-    const m=links?links.m:bpMask(it.type,it.x,it.z),style=it.style==='dirt'?'dirt':'stone',sig=m+'|'+lamp+(it.type==='path'?'|'+style:'')+(it.type==='road'?'|'+cr:'');
+    const m=links?links.m:(it.type==='road'?bpMask(it.type,it.x,it.z):it.type==='wall'?bpWallMask(it.x,it.z):0),style=it.style==='dirt'?'dirt':'stone',sig=m+'|'+lamp+(it.type==='path'?'|'+style:'')+(it.type==='road'?'|'+cr:'');
     if(it.g&&it.g.userData.k!==sig){scene.remove(it.g);disposeObj(it.g);
       const g=bpClone(it.type,it.rot,m,links,lamp,it.style||'stone',cr);g.userData.it=it;
       g.position.set(it.x*U,fpBaseY(it.type,it.x,it.z,it.rot),it.z*U);scene.add(g);it.g=g;bpPaint(it)}}}
-// بازسازی دسته‌ای ماسک مسیرها؛ از اسکن تکراریِ صف برای هر قطعه جلوگیری می‌کند.
-function bpRemeshAll(){for(const it of BP.items){if(it.type!=='road'&&it.type!=='path')continue;const links=it.type==='path'?bpPathMask(it.x,it.z):null,lamp=it.type==='road'?(((it.x+it.z)%2+2)%2===0?1:0):0,cr=it.type==='road'?bpCrossMask(it.x,it.z):0,m=links?links.m:bpMask(it.type,it.x,it.z),style=it.style==='dirt'?'dirt':'stone',sig=m+'|'+lamp+(it.type==='path'?'|'+style:'')+(it.type==='road'?'|'+cr:'');
+// بازسازی دسته‌ای ماسک مسیرها/دیوار؛ از اسکن تکراریِ صف برای هر قطعه جلوگیری می‌کند.
+function bpRemeshAll(){for(const it of BP.items){if(it.type!=='road'&&it.type!=='path'&&it.type!=='wall')continue;const links=it.type==='path'?bpPathMask(it.x,it.z):null,lamp=it.type==='road'?(((it.x+it.z)%2+2)%2===0?1:0):0,cr=it.type==='road'?bpCrossMask(it.x,it.z):0,m=links?links.m:(it.type==='road'?bpMask(it.type,it.x,it.z):it.type==='wall'?bpWallMask(it.x,it.z):0),style=it.style==='dirt'?'dirt':'stone',sig=m+'|'+lamp+(it.type==='path'?'|'+style:'')+(it.type==='road'?'|'+cr:'');
   if(it.g&&it.g.userData.k!==sig){scene.remove(it.g);disposeObj(it.g);const g=bpClone(it.type,it.rot,m,links,lamp,it.style||'stone',cr);g.userData.it=it;g.position.set(it.x*U,fpBaseY(it.type,it.x,it.z,it.rot),it.z*U);scene.add(g);it.g=g}}}
-// ── ردیف پیوستهٔ جاده/پیاده‌رو: افزودن دسته‌ای و فقط یک بازسازی اتصال/اعتبارسنجی در پایان.
-function bpStroke(x0,z0,x1,z1){const pts=[[x0,z0]],step=BP.type==='path'?FOOT.path[0]:GRID;let nx=Math.round((x1-x0)/step),nz=Math.round((z1-z0)/step),x=x0,z=z0;
+// ── ردیف پیوستهٔ جاده/پیاده‌رو/دیوار: افزودن دسته‌ای و فقط یک بازسازی اتصال/اعتبارسنجی در پایان.
+function bpStroke(x0,z0,x1,z1){const pts=[[x0,z0]],step=FOOT[BP.type]?FOOT[BP.type][0]:GRID;let nx=Math.round((x1-x0)/step),nz=Math.round((z1-z0)/step),x=x0,z=z0;
   while(nx||nz){if(Math.abs(nx)>=Math.abs(nz)&&nx){x+=Math.sign(nx)*step;nx-=Math.sign(nx)}else if(nz){z+=Math.sign(nz)*step;nz-=Math.sign(nz)}pts.push([x,z])}
   let added=0;BP._batch=true;try{for(const[xp,zp]of pts)if(bpAdd(xp,zp))added++}finally{BP._batch=false}
   if(added){bpRemeshAll();bpAfterChange()}return added}
@@ -164,17 +191,20 @@ function bpLine(c){if(!c){if(BP.line){scene.remove(BP.line);disposeObj(BP.line);
   if(!BP.line){BP.line=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xffe0a0,transparent:true,opacity:.8}));BP.line.position.y=.1;scene.add(BP.line)}
   BP.line.geometry.setFromPoints([new THREE.Vector3(BP.down.c[0]*U,0,BP.down.c[1]*U),new THREE.Vector3(c[0]*U,0,c[1]*U)])}
 // ── شبحِ شناور زیر انگشت (مدل واقعی؛ فقط وقتی درگِ جدید روی زمین است)
-function bpFloat(c){const isTile=BP.type==='road'||BP.type==='path';
-  const rot=isTile?0:((BP.type==='house'||BP.type==='hq')&&!BP.manualRot?bpAutoRot(BP.type,c[0],c[1],BP.rot,W.buildings.concat(BP.items)):BP.rot);
+function bpFloat(c){const isTile=BP.type==='road'||BP.type==='path'||BP.type==='wall';
+  let rot=isTile?0:(BP_AUTO.includes(BP.type)&&!BP.manualRot?bpAutoRot(BP.type,c[0],c[1],BP.rot,W.buildings.concat(BP.items)):BP.rot);
+  if(BP.type==='gate'){const s=bpGateSnap(c[0],c[1]);if(s){c=[s[0],s[1]];rot=s[2]}}   // دروازه: خودکار روی نزدیک‌ترین کاشی جاده می‌نشیند
+  if(BP.type==='bridge'){const s=fpBridgeSnap(c[0],c[1]);if(s){c=[s[0],s[1]];rot=s[2]}}   // پل: خودکار روی نقطهٔ کانونی رود، عمود بر آن
   const links=BP.type==='path'?bpPathMask(c[0],c[1]):null;
   const lamp=BP.type==='road'?(((c[0]+c[1])%2+2)%2===0?1:0):0;
   const cr=BP.type==='road'?bpCrossMask(c[0],c[1]):0;
-  const mask=links?links.m:(isTile?bpMask(BP.type,c[0],c[1]):0);
+  const mask=links?links.m:(BP.type==='road'?bpMask(BP.type,c[0],c[1]):BP.type==='wall'?bpWallMask(c[0],c[1]):0);
   const sig=BP.type+'|'+rot+'|'+mask+'|'+lamp+(BP.type==='path'?'|'+PATH_STYLE:'')+(BP.type==='road'?'|'+cr:'');
   if(!BP.ghost||BP.ghost.userData.sig!==sig){
     if(BP.ghost){scene.remove(BP.ghost);disposeObj(BP.ghost)}
     BP.ghost=bpClone(BP.type,rot,mask,links,lamp,PATH_STYLE,cr);BP.ghost.userData.sig=sig;scene.add(BP.ghost)}
   const val=bpVal(BP.type,c[0],c[1],null,rot),ok=val===true;
+  const eb=$('bpe');if(eb)eb.textContent=ok?'':'⚠ '+val;   // دلیل خطا زیر شبح (سبز/قرمز + چراغ توضیح)
   BP.ghost.position.set(c[0]*U,fpBaseY(BP.type,c[0],c[1],rot),c[1]*U);   // شبح هم دقیقاً در ارتفاعِ نهایی بنشیند (پیش‌نمایش = نتیجه)
   if(!isTile)BP.ghost.rotation.y=rot*Math.PI/180;
   BP.ghost.userData.ring.material.color.setHex(ok?BP_OK:BP_BAD);
@@ -192,9 +222,13 @@ function bpBar(){const b=$('bpb');if(!b)return;b.style.display=BP.on?'flex':'non
   const n=BP.items.length,bad=BP.items.filter(i=>!i.ok).length;
   const cost=W.cost?BP.items.reduce((s,i)=>s+(W.cost[i.type]||0),0):0;
   $('bpn').innerHTML='نقشهٔ ساخت: '+cpx(n)+' مورد'+(bad?' · <b style="color:#ff8d80">'+cpx(bad)+' نامعتبر</b>':'')+(cost&&!$('fr').checked?' · '+fa(cost/1e6,1)+' م':'');
+  // دلیل خطا: انتخاب‌شدهٔ نامعتبر یا اولین مورد نامعتبر صف — همان رشته‌ای که bpVal داده (مثل «اشغال است» یا «حریم رودخانه»)
+  const errIt=BP.sel&&!BP.sel.ok?BP.sel:BP.items.find(i=>!i.ok)||null,eb=$('bpe');
+  if(eb)eb.textContent=errIt?('⚠ '+cpx(BP.items.indexOf(errIt)+1)+': '+(errIt.err||'نامعتبر')):'';
   $('bpi').textContent=BP.sel?'انتخاب: '+cpx(BP.items.indexOf(BP.sel)+1)+' · '+(W.catalog?.[BP.sel.type]||BP.sel.type):'';
   $('bpok').style.opacity=n&&!bad&&!BP.busy?1:.35}
 function bpStart(){if(!T)return;BP.on=true;BP.rot=0;BP.manualRot=false;BP.sel=null;BP.pid=null;bpBar();
+  if(typeof bpPalette==='function')bpPalette();   // پالت دسته‌بندی‌شده (09-ui-interaction.js) — هر بار ورود، هزینه‌ها از W.cost تازه می‌شوند
   $('bph').style.display='block';$('adm').style.display='none';$('pal').style.display='flex'}
 function bpEnd(){ctl.enabled=true;BP.on=false;BP.sel=null;BP.dragIt=null;BP.down=null;BP.pid=null;
   for(const it of BP.items)if(it.g){scene.remove(it.g);disposeObj(it.g);it.g=null}
@@ -221,7 +255,7 @@ async function bpCommit(){const n=BP.items.length;if(!n||BP.busy)return;
 const bpDelay=id=>BP._stag.get(id)||0;
 document.body.insertAdjacentHTML('beforeend',
  `<div id="bph" class="g">🏗️ انگشت بگذار و بکش: شبح دنبال انگشت می‌آید، رها کن = بنشیند · روی پیش‌نمایش بکش = جابه‌جایی · تپ = انتخاب · R چرخش · ⇧ دوتایی حذف</div>
-  <div id="bpb" class="g"><span id="bpn"></span><button id="bpr" title="چرخش انتخاب‌شده (R)">🔄</button><button id="bpq2" title="صف ساخت">📋</button><button id="bpx" title="کنسل (Esc)">✕</button><button id="bpok" title="ساخت (Enter)">✓</button></div>
+  <div id="bpb" class="g"><span id="bpn"></span><span id="bpe"></span><button id="bpr" title="چرخش انتخاب‌شده (R)">🔄</button><button id="bpq2" title="صف ساخت">📋</button><button id="bpx" title="کنسل (Esc)">✕</button><button id="bpok" title="ساخت (Enter)">✓</button></div>
   <div id="bpq" class="g"><div id="bpi"></div><ol id="bql"></ol></div>`);
 $('bpx').onclick=()=>{bpEnd();toast('نقشهٔ ساخت کنسل شد — هیچی ساخته نشد')};
 $('bpok').onclick=bpCommit;

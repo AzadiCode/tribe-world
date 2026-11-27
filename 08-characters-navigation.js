@@ -9,6 +9,9 @@ const ci=v=>Math.floor((v-NO)/NS),cw=i=>NO+(i+.5)*NS,walk=(x,z)=>{const i=ci(x),
 const NAV_RIVER=[[-146,22],[-96,22],[-96,6],[-40,6],[-40,24],[16,24],[16,4],[72,4],[72,18],[146,18]]; // مسیر شکستهٔ رود — هماهنگ با RIVER_PTS در 06-world-scenery.js
 const pondM=(x,z)=>{for(let i=1;i<NAV_RIVER.length;i++){const a=NAV_RIVER[i-1],b=NAV_RIVER[i],dx=b[0]-a[0],dz=b[1]-a[1],u=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz)));if(Math.hypot(x-a[0]-u*dx,z-a[1]-u*dz)<4.1)return true}return false}; // حریم رودخانه برای جلوگیری از عبور شهروند از آب
 function blk(x0,x1,z0,z1){for(let j=Math.max(0,ci(z0));j<=Math.min(NN-1,ci(z1));j++)for(let i=Math.max(0,ci(x0));i<=Math.min(NN-1,ci(x1));i++)nav[j*NN+i]=1}
+// فاز ۲ — پل: بازکردن سلول‌های «رود» داخل مستطیل (فقط بلوکِ رودِ NAV_STATIC، نه مرز نقشه — پل هرگز مرز را باز نمی‌کند).
+// آینهٔ وارونهٔ blk برای دهانهٔ عبور؛ در هر دو مسیر کامل/پچ بعد از پایهٔ ایستا اجرا می‌شود ⇒ خروجی یکسان.
+function unblk(x0,x1,z0,z1){for(let j=Math.max(0,ci(z0));j<=Math.min(NN-1,ci(z1));j++)for(let i=Math.max(0,ci(x0));i<=Math.min(NN-1,ci(x1));i++){const k=j*NN+i;if(pondM(cw(i),cw(j)))nav[k]=0}}
 const PW=FOOT.road[0]*U*PATH_WIDTH_RATIO,ROADC=3.5,dry=(x,z)=>cost[ci(z)*NN+ci(x)]<3;
 function setCost(X,Z,hx,hz,v,force,clip){for(let j=ci(Z-hz);j<=ci(Z+hz);j++)for(let i=ci(X-hx);i<=ci(X+hx);i++){if(i<0||j<0||i>=NN||j>=NN)continue;if(Math.abs(cw(i)-X)>hx||Math.abs(cw(j)-Z)>hz)continue;if(clip&&!inNavRegions(clip,i,j))continue;const k=j*NN+i;cost[k]=force?v:Math.min(cost[k],v)}}
 // ─── فاز ۱ — لایهٔ ایستای ناوبری + پچ ناحیه‌ای ───
@@ -60,10 +63,30 @@ const trees=[];let sx=0,sz=0,n=0;
 // حلقهٔ فهرست‌ها همیشه کامل است (O(N) سبک و به ترتیب فهرست = خروجی یکسان)؛ فقط بلوکه‌سازی nav در حالت پچ
 // به سازه‌های برخوردی با ناحیه محدود می‌شود. مستطیل occ مستقیم از fpBounds — بیت‌به‌بیت == fpRects قدیم، بدون Set/رشته.
 for(const b of w.buildings){const X=b.x*U,Z=b.z*U,a=b.rot*Math.PI/180,fx=Math.sin(a),fz=Math.cos(a);const bd=fpBounds(b),rc=[bd.x0*U,(bd.x1+1)*U,bd.z0*U,(bd.z1+1)*U];occ.push(rc);const hit=!patch||regHit(REG,bd),bk=()=>blk(rc[0]+.001,rc[1]-.001,rc[2]+.001,rc[3]-.001);
+// مجموعهٔ دفاعی: دیوار/برج سلول‌های خود را می‌بندد؛ دروازه فقط دو پایهٔ واقعی‌اش را می‌بندد (fpRects چندپاره)
+// و دهانهٔ روی جاده باز می‌ماند — شهروند و خودرو از زیر قوس روی همان کاشی جاده رد می‌شوند.
+const grec=b.type==='gate'?fpRects(b,FP_EMPTY):null;
 if(b.type==='house'||b.type==='hq'){if(hit)bk();const h={id:b.id,x:X,z:Z,fx,fz,hq:b.type==='hq'};homes.push(h);homeById.set(b.id,h)}
 else if(b.type==='market'){if(hit)bk();mkts.push({x:X+fx*1.25,z:Z+fz*1.25,cx:X,cz:Z})}
 else if(b.type==='tree'){if(hit)bk();trees.push([X,Z])}
 else if(b.type==='farm'){if(hit)bk();farms.push({x:X,z:Z})}
+else if(b.type==='wall'||b.type==='tower'||b.type==='palace1'||b.type==='palace2'||b.type==='palace3'){if(hit)bk()}   // کاخ = بنای نمادین توپُر (فاز ۲)
+else if(b.type==='warehouse'||b.type==='workshop'||b.type==='mill'||b.type==='school'||b.type==='clinic'||b.type==='store'){if(hit)bk()}   // فاز ۳: کاربردی‌های توپُر — ردپای کامل بسته می‌شود
+else if(b.type==='park'){   // فاز ۳: کف پارک «قابل عبور» است (سنگ‌فرش شهری) — فقط فواره و چهار درخت بلوک می‌شوند؛
+ // چهار جای نشستن روی سنگ‌فرش رو به فواره به treeSp می‌رود (همان سیستم «نشستن زیر درخت»، بدون تغییر رفتار شهروند).
+ if(hit){blk(X-.56,X+.56,Z-.56,Z+.56);
+  for(const sx of[-1,1])for(const sz of[-1,1])blk(X+sx*1.05-.35,X+sx*1.05+.35,Z+sz*1.05-.35,Z+sz*1.05+.35)}
+ const a=b.rot*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a);
+ for(const[lx,lz]of[[.5,.5],[-.5,.5],[.5,-.5],[-.5,-.5]])treeSp.push({x:X+lx*ca+lz*sa,z:Z-lx*sa+lz*ca,tx:X,tz:Z})}
+else if(b.type==='gate'&&hit){for(const gr of grec)blk(gr[0]+.001,gr[1]-.001,gr[2]+.001,gr[3]-.001)}
+else if(b.type==='bridge'&&hit){
+ // پل رودخانه (فاز ۲): (۱) دهانهٔ عبور — سلول‌های رودِ زیر عرشه باز می‌شوند (فقط بلوک رود؛ مرز نقشه هرگز) و
+ // (۲) پنج گرهٔ مجازیِ جاده در راستای عرشه، هم‌مرتبه با کاشی‌های جاده (مرکز ±۲ و ±۴ واحد — چون مرکز پل روی
+ // شبکهٔ CELL است، گره‌ها دقیقاً به کاشی جادهٔ دو ساحل می‌چسبند: گراف خودرو، roadSet و هزینهٔ آسفالت همه از
+ // همین roadC می‌آیند — امضای carRoadVer هم خودکار تازه می‌شود).
+ unblk(rc[0]+.001,rc[1]-.001,rc[2]+.001,rc[3]-.001);
+ const ax=((b.rot||0)%180)===0;   // rot 0 = عرشه در راستای x
+ for(const o of[-4,-2,0,2,4])roadC.push(ax?{x:X+o,z:Z,b}:{x:X,z:Z+o,b})}
 else if(b.type==='road')roadC.push({x:X,z:Z,b});
 else if(b.type==='path')pathC.push({x:X,z:Z,b})
 if(b.type!=='tree'){sx+=X;sz+=Z;n++}}
@@ -75,7 +98,10 @@ regH=homes.filter(h=>!h.hq).sort((a,b)=>a.id-b.id);hqH=homes.find(h=>h.hq)||null
 RAD=Math.min(34,Math.max(8+2.6*Math.log2(1+((w.stats&&w.stats.pop)||1)),E+5)); // با رشد جمعیت، محدودهٔ حرکت بزرگ‌تر می‌شود
 // هزینه‌ها: جاده‌ها force (پاس اول)، بعد پیاده‌روها min — ترتیب عین مسیر کامل؛ در حالت پچ فقط مشارکت‌کنندگانِ
 // ناحیه، با clip نوشته‌ها به ناحیه (جادهٔ force نباید بیرون ناحیه بنویسد — بازنویسی min اتصال‌گرها را نابود می‌کند)
-for(const{x:X,z:Z,b}of roadC){if(patch&&!selHit(RN,fpBounds(b)))continue;setCost(X,Z,1,1,ROADC,1,patch?RN:null)} // آسفالت: گران، برای ماشین‌هاست
+// عرشهٔ پل استثناست: گذرگاه پیادهٔ اصلی روی آب — هزینهٔ پیاده‌رو (۰٫۵) می‌گیرد نه آسفالت (۳٫۵). خودروها اصلاً از
+// میدان هزینه نمی‌گذرند (گراف جاده) ولی A* شهروند با ۳٫۵، ۴۴ سلولِ عرشه از هر مسیر چمنِ ارزان عقب می‌افتد و
+// بودجهٔ گره (۴۸۰۰) را می‌سوزاند = عملاً هیچ شهروندی از رود عبور نمی‌کرد (اندازه‌گیری واقعی، فاز ۲).
+for(const{x:X,z:Z,b}of roadC){if(patch&&!selHit(RN,fpBounds(b)))continue;setCost(X,Z,1,1,b.type==='bridge'?.5:ROADC,1,patch?RN:null)} // آسفالت: گران، برای ماشین‌هاست
 for(const{x:X,z:Z,b}of pathC){let sel=!patch||selHit(RN,fpBounds(b));
  if(patch&&!sel)for(const rb of fpAdjacent(b))if(rb.type==='road'&&selHit(RN,fpBounds(rb))){sel=true;break} // اتصال‌گر داخل bounds جادهٔ مجاور است
  if(!sel)continue;const hw=PW/2;setCost(X,Z,hw,hw,.5,0,patch?RN:null);

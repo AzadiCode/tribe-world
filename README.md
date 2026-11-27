@@ -1,66 +1,92 @@
-# Tribe World — جهان زنده قبیله
+# خروجی نهایی — گسترش ساخت‌وساز در ۳ فاز (دیوار/برج/دروازه + کاخ/پل + کاربردی‌ها)
 
-> **مرجع کامل و به‌روز پروژه: [`PROJECT_GUIDE.md`](PROJECT_GUIDE.md)** (نقشهٔ فایل‌ها، قوانین، تاریخچه). جدول زیر خلاصه‌ای از آن است.
+هر سه فاز کامل، اعمال‌شده روی پروژه و تأییدشده با تست واقعی بازی (روز/شب). قواعد ثابت در هر سه فاز:
+صفر دوران/قفل‌گشایی — همه‌چیز بلافاصله قابل ساخت؛ پالت و متریال فقط از دنیای خود بازی
+(`WALL_*` بتنی روشن هم‌خانوادهٔ پیاده‌رو/HQ، شیشهٔ `HQGL`، باند `AWN`، سقف از پالت `ROOF`، پنجره‌های گرم `GLOW`)؛
+بدون هیچ بافت یا رنگ تازه. هیچ حالت قرون‌وسطایی (سنگ تیره/کاهگل) وجود ندارد.
 
-**ساختار تخت:** همهٔ فایل‌ها در یک پوشه‌اند (بدون زیرپوشه). اسم هر فایل = `شماره-دسته-نام` که دسته همان پوشهٔ قدیمی است: `01-server` بک‌اند · `02-web` صفحه · `03-css` استایل · `04-js` شروع · `05-core` `06-world` `07-buildings` `08-characters` `09-ui` `10-admin` `11-features` `12-net` فرانت. فایل‌های ریشه (`app.py`, `render.yaml`, `requirements.txt`, `README.md`, `PROJECT_GUIDE.md`) اسمشان ثابت است.
+---
 
-اجرای محلی: `pip install -r requirements.txt` ← `python app.py` (بدون `MONGO_URI` داده‌ها موقتی‌اند).
-دیپلوی Render همان قبلی است (`gunicorn app:app`)؛ متغیرها: `ADMIN_KEY`, `MONGO_URI`, `BOT_TOKEN`.
+## فاز ۱ — مجموعهٔ دفاعی مدرن‌شده (۱۳ فایل — `phase1-changed-files/`)
 
-## کجا دنبالش بگردم؟
-
-| می‌خوای چی رو عوض کنی؟ | کجا |
+| فایل | تغییر |
 |---|---|
-| ظاهر کارکترها | `08-characters-models.js` |
-| رفتار و حرکت کارکترها | `08-characters-behavior.js` · مسیریابی: `08-characters-navigation.js` |
-| حرف زدن کارکترها | `08-characters-dialogue.js` · نام/حباب: `08-characters-nametags.js` |
-| زمین، آسمان، رودخانه، درخت و کوه | `06-world-scenery.js` |
-| شب‌وروز، ستاره، ماه | `06-world-environment.js` |
-| جاده و پیاده‌رو / ماشین‌ها | `06-world-roads.js` / `06-world-cars.js` |
-| ساختمان‌ها و آیتم‌ها (مدل سه‌بعدی) | `07-buildings-models.js` |
-| نمای داخل خانه (سقف باز می‌شود، مبلمان، کارت مشخصات) | `07-buildings-houseview.js` + `03-css-house.css` |
-| نوع، نام و قیمت ساختمان‌ها | `01-server-config.py` (`CATALOG`, `COST`) |
-| اقتصاد، مراحل، هدف‌ها | `01-server-config.py` + `01-server-world.py` |
-| ربات تلگرام (پیام خوش‌آمد، وب‌هوک) | `01-server-telegram.py` |
-| بازیکن‌ها و «کارکتر من» | `01-server-players.py` + `12-net-telegram.js` |
-| پنل ادمین | `10-admin-panel.js` + `01-server-admin.py` + `01-server-auth.py` |
-| ابزار ساخت/جابه‌جایی مدیر، لمس صحنه | `09-ui-interaction.js` |
-| نوار بالا (منابع)، داستان آغازین | `09-ui-hud.js` + `03-css-hud.css` |
-| ضبط ویدیو / استودیوی سینمایی | `11-features-recorder.js` · `11-features-cinema.js` · `11-features-hudcap.js` · `11-features-mp4fix.js` |
-| موسیقی | `11-features-music.js` |
-| دوربین، نور، رندرر | `05-core-engine.js` |
-| پله‌های کیفیت، بنچمارک، سقف draw call، محافظ WebGL | `05-core-quality.js` (جدول پله‌ها) + `05-core-perf.js` (کنترلر) |
-| ارتباط با سرور (poll) | `12-net-sync.js` |
-| دیتابیس | `01-server-db.py` |
+| `01-server-config.py` | `FOOT/CATALOG/COST` سه نوع: `wall` (۱×۱)، `tower` (۲×۲)، `gate` (۳×۱) |
+| `01-server-world.py` | ردپای چندپارهٔ دروازه (`_gate_parts` + `_cells_of`)، قاعدهٔ «دروازه روی کاشی جاده + عبور جاده» در `check_place` |
+| `01-server-admin.py` | `auto_rot` دروازه (هم‌راستا با جاده) |
+| `03-css-admin.css` | استایل پالت ساخت دسته‌بندی‌شده |
+| `05-core-main.js` | انیمیشن پرچم تاب‌خور (`userData.flg`) |
+| `06-world-roads.js` | نقاط نور شب دیوار/برج/دروازه در `lampPts` |
+| `07-buildings-chunks.js` | قواعد چانک دفاعی‌ها |
+| `07-buildings-footprint.js` | ماسک اتصال دیوار، اسنپ دروازه، `fpBaseY` |
+| `07-buildings-models.js` | `wallMesh` (ماسک اتصال ۴جهته + کنگره + بندکشی)، `towerMesh`/`gateMesh` (سقف از `ROOF`، پرچم، فانوس، پنجره‌های `GLOW`)، پالت `WALL_*` |
+| `08-characters-navigation.js` | `NAV_STATIC`؛ دیوار/برج کل ردپا بلاک، دروازه فقط دو پایه (دهانه باز برای شهروند و خودرو) |
+| `09-ui-blueprint.js` | استروک دیوار (`bpWallMask`)، اسنپ دروازه (`bpGateSnap`)، دلیل خطا `#bpe` |
+| `09-ui-interaction.js` | پالت دسته‌بندی‌شده (مسکونی/اقتصادی/دفاعی/خدمات/تزئینی با آیکون+هزینه)، دیوار در `isTile` |
+| `PROJECT_GUIDE.md` | تاریخچه + جدول‌ها + تله‌های فاز ۱ |
 
-## دستورکارهای رایج
+اسکرین‌شات‌ها: `phase1-wall-tower-gate-day.png`، `phase1-gate-closeup.png`، `phase1-verify-day.png`، `phase1-verify-night.png`
 
-- **ساختمان جدید:** `01-server-config.py` (اضافه به `CATALOG` و `COST`) ← تابع مدل در `build` داخل `07-buildings-models.js`.
-- **افکت سینمایی جدید:** یک آیتم به `EFFECTS` در `11-features-cinema.js`.
-- **جملهٔ جدید برای آدم‌ها:** `DL` (تک‌جمله) یا `DC` (گفتگوی دونفره) در `08-characters-dialogue.js`.
-- **API جدید مدیر:** تابع با `@bp.post(...)` و `@admin_only` در `01-server-admin.py`، و فراخوانی‌اش در `10-admin-panel.js`.
-- **فایل جدید فرانت:** با قالب `شماره-دسته-نام.js` بساز (مثلاً `06-world-rain.js`) و اسمش (بدون `.js`) را به `GAME_FILES` در `04-js-boot.js` اضافه کن.
-- **فایل جدید بک‌اند:** `01-server-نام.py` بساز و یک خط به جدول `PARTS` در `app.py` اضافه کن (نام مستعار `srv_نام`؛ ترتیب مهم است).
+## فاز ۲ — کاخ شهری سه‌سطحی + پل رودخانه (۱۴ فایل — `phase2-changed-files/`)
 
-- **تغییر ظاهر خانه:** تابع `house` در `07-buildings-models.js` (دیوار = گروه `wl`، سقف = گروه `ro`؛ با `bake` مش‌ها ادغام می‌شوند). مبلمان داخل: `mkInterior` در `07-buildings-houseview.js`.
+| فایل | تغییر |
+|---|---|
+| `01-server-config.py` | `bridge=(44,8)` و `palace1/2/3=(16,16)` در FOOT/CATALOG/COST |
+| `01-server-world.py` | `bridge_snap` (آینهٔ فرانت)، قواعد پل در `check_place`، معافیت `fix_pond`، `free_cell` پل |
+| `01-server-admin.py` | `auto_rot` پل (عمود بر رود) و کاخ‌ها (رو به جاده) |
+| `05-core-main.js` | پرچم‌های چندگانه روی `userData.flgs` |
+| `06-world-cars.js` / `08-characters-models.js` / `08-characters-behavior.js` | ارتفاع از `groundY` (روی عرشهٔ پل) |
+| `06-world-roads.js` | نور شب عرشه (۴ چراغ) و کاخ (ورودی+حیاط) |
+| `07-buildings-footprint.js` | `fpBridgeSnap`، پروفیل `BRIDGE_Y`، معافیت پل از حریم رود |
+| `07-buildings-models.js` | `palaceMesh` سه‌سطحی (حصار+برج+بنگاه، تاج `HQGL` و نشان شهر در سطح ۳)، `bridgeMesh` (عرشهٔ قوسی ۱۱-قطعه‌ای، پایه‌های جفتی)، `mkFlag` چند-پرچمی |
+| `08-characters-navigation.js` | پل = `unblk` رود + ۵ گرهٔ خودرو روی عرشه + هزینهٔ عرشه ۰٫۵ |
+| `09-ui-blueprint.js` | قاعدهٔ پل در `bpVal`، اسنپ پل در شبح/چیدن/جابه‌جایی، `BP_AUTO` کاخ‌ها |
+| `09-ui-interaction.js` | کاخ‌ها در مسکونی، پل در خدمات؛ `bpPick` فقط مش |
+| `PROJECT_GUIDE.md` | تاریخچه فاز ۲ + ۹ تلهٔ جدید |
 
-## نکتهٔ مهم فرانت
+اسکرین‌شات‌ها: `phase2-palace-day/night.png`، `phase2-palace-tiers.png`، `phase2-bridge-day/night.png`، `phase2-bridge-close.png`، `phase2-bridge-traffic.png`، `phase2-bridge2-day.png`، `phase2-city-overview.png`
 
-فایل‌های فرانت `05..12` (به‌جز `11-features-cinema.js`/`11-features-hudcap.js`/`11-features-mp4fix.js` و `04-js-boot.js`) اسکریپت معمولی‌اند و **یک محیط مشترک** دارند، درست مثل وقتی که همه در یک فایل بودند؛
-یعنی متغیرها و توابع هم‌دیگر را مستقیم می‌بینند (`cits`, `W`, `toast`, …) و نباید یک اسم را دوبار تعریف کنی.
-ترتیب بارگذاری در `04-js-boot.js` مهم است (شمارهٔ اسم فایل ربطی به ترتیب بارگذاری ندارد): هر فایل فقط در لحظهٔ بارگذاری می‌تواند از فایل‌های بالاتر از خودش استفاده کند.
+## فاز ۳ — هفت ساختمان کاربردی + باندل سروری (۱۵ فایل — `phase3-changed-files/`)
 
-## زیرساخت عملکرد (برای توسعهٔ بزرگ)
+| فایل | تغییر |
+|---|---|
+| `01-server-config.py` | انبار ۱۲×۱۰، کارگاه ۱۰×۸، توربین ۸×۸، مدرسه ۱۴×۱۰، درمانگاه ۱۰×۸، پارک ۱۲×۱۲، فروشگاه ۱۴×۱۲ (خرده‌سلول) + درآمدهای `WORKSHOP/MILL/STORE_INCOME` |
+| `01-server-world.py` | درآمد کارگاه/فروشگاه/توربین در `tick` |
+| `01-server-admin.py` | کاربردی‌ها در خانوادهٔ چرخش خودکار؛ توربین متقارن |
+| `01-server-public.py` | **باندل سروری** `/bundle.js` + `/bundle.css` هش‌دار، کش immutable، براتلی (js ۳۰۹KB←۷۱KB)، `?dev=1` مسیر قدیمی |
+| `05-core-main.js` | چرخش پیوستهٔ پروانهٔ توربین (`userData.rotors`، ~۲۱rpm) |
+| `07-buildings-chunks.js` | کاربردی‌های ایستا در `CH_MERGE`؛ توربین هرگز |
+| `07-buildings-footprint.js` | ردپای هفت نوع |
+| `07-buildings-models.js` | `wareMesh/workMesh/millMesh/schoolMesh/clinicMesh/parkMesh/storeMesh` + صلیب سبز `CLXG` + چراغ هوانوردی `REDL` |
+| `08-characters-navigation.js` | کاربردی‌های توپُر کل ردپا بلاک؛ **پارک کفِ قابل‌عبور** (۴ جای نشستن رو به فواره) |
+| `09-ui-blueprint.js` / `09-ui-interaction.js` | کاربردی‌ها در پالت (اقتصادی/خدمات/تزئینی) + `BP_AUTO` |
+| `PROJECT_GUIDE.md` | تاریخچه فاز ۳ + تله‌های باندل و کاربردی‌ها |
+| +۴ اسکریپت تست/رندر | `test_phase3_server.py`، `test_phase3_ui.js`، `build_phase3.py`، `run_phase3_test.sh`، `shot_north.js` |
 
-**بودجه:** موبایل ≤ ۲۵۰ draw call و ≈۳۰۰ هزار مثلث، دسکتاپ ≤ ۶۰۰ و ≈۱٫۲ میلیون. هر قابلیت جدید باید در همین بودجه جا شود. برای دیدنش `?perf=1` را به آدرس اضافه کن (fps، 1% Low، tick شبیه‌سازی، زمان هر زیرسیستم، نشت حافظه، calls، tris، تعداد geometry/texture). در کنسول: `Q.snapshot()` (شامل آمار کامل موتور در فیلد `twe`) یا `TWE.stats.snapshot()`.
+اسکرین‌شات‌ها: `phase3-district-day/night.png`، `phase3-east-day/night.png`، `phase3-west-day.png`، `phase3-school-front.png`، `phase3-workshop-front.png`، `phase3-clinic-front.png`، `phase3-clinic-front-night.png`، `phase3-store-night.png`، `phase3-turbine-day/night.png`، `phase3-park-day.png`، `phase3-bundle-mode.png`
 
-**Tribe World Engine 2.0 (`05-core-twengine.js`):** هستهٔ مستقلِ حلقهٔ بازی — شبیه‌سازیِ گام‌ثابت ۳۰Hz (رفتار منطقی شهروند/خودرو روی هر دستگاهی یکسان)، EventBus رویدادهای دنیا، زمان‌بندِ بودجه‌ای (اعمالِ ساخت دسته‌ای بدون فریز)، استخر اشیا، مدیریت حافظه (checkpoint/تشخیص نشت) و داشبورد اندازه‌گیری. زیرسیستم جدید: `TWE.sys('نام',{tick?,frame?})` در `05-core-main.js`.
+---
 
-**پله‌های کیفیت (۰ = بهترین … ۹ = Potato)** در `QLV` داخل `05-core-quality.js`. **سیاستٔ Engine 2.0: هیچ قابلیتی با پلهٔ کیفیت حذف/کم نمی‌شود** — تعداد شهروندها و نام‌ها در همهٔ پله‌ها ثابت است؛ فقط اهرم‌های بصری کم می‌شوند (ترتیب: سایه نرم ← سایهٔ ریزتر ← سایه کم‌نرخ ← خاموش‌کردن هاله/کرم شب‌تاب/کاهش ابرهای تزئینی ← فاصلهٔ دید (Culling — موجودیت و رفتار باقی می‌ماند) ← pixelRatio ← بدون سایه). پله‌ی شروع از `deviceMemory`/`hardwareConcurrency`/رندر نرم‌افزاری تعیین می‌شود؛ بعد از ۲ ثانیه بنچمارک و سپس هر ۱٫۵ ثانیه چک می‌شود (۳ ثانیه fps زیر ۲۷ ← یک پله پایین؛ ۱۲ ثانیه fps بالای ۵۲ ← یک پله بالا؛ اگر ارتقا شکست بخورد تا ۳ دقیقه قفل می‌شود). آنتی‌آلیاس فقط هنگام ساخت رندرر تعیین می‌شود.
-دستی: `?q=0..9` یا `?q=ultra|high|med|low|potato` (خودکار خاموش می‌شود)، یا `Q.set(n)` / `Q.auto()` در کنسول.
+## مرجع بصری (از ابتدای کار)
+- `ref-A-real-game-day.png` / `ref-A2-real-game-closeup.png` — اسکرین‌شات واقعی بازی (مرجع سبک)
+- `ref-B-inspiration.jpg` — تصویر الهام (فقط فرم سازه‌ها)
+- `reference-comparison.html` — صفحهٔ مقایسهٔ A/B با تحلیل ۵وجهی (پالت/مقیاس/زاویه/نور/تزئین)
 
-**قواعد برای آیتم/ساختمان جدید:**
-- چند مش هم‌رنگ‌نشده نساز؛ آخر تابع مدل `bakeVC(g)` (ادغام رنگی، یک draw call) یا `bake(g)` (ادغام بر اساس متریال) را صدا بزن.
-- ژئومتری مشترک بین چند شیء را با `keepGeo(...)` علامت بزن تا هنگام حذف ساختمان dispose نشود؛ بقیه خودکار آزاد می‌شوند (`disposeObj`).
-- افکت درخشان (Additive) جدید: متریالش را به لیست افکت‌ها در `apply()` داخل `05-core-perf.js` اضافه کن تا در پله‌های ضعیف خاموش شود.
-- DOM برای هر شهروند نساز؛ نام/حباب فقط از `c.el` (تنبل) استفاده می‌کند.
+## وضعیت تست (اجرای مجدد کامل — امروز، همه سبز)
+- `py_compile` همهٔ py و `node --check` همهٔ js ✓
+- تست سرور فاز ۳: **۴۳ سبز / ۰ قرمز** (`scripts/test_phase3_server.py`)
+- تست سرور فاز ۲: **۳۱ سبز / ۰ قرمز** (`scripts/test_phase2_server.py`)
+- تست UI کامل فاز ۳ (سرور تازه + شهر دمو + محلهٔ کاربردی + Playwright): **ALL GREEN، صفر خطای کنسول**
+- رگرسیون UI فاز ۱+۲ (دفاع + کاخ/پل + هم‌ارزی اسنپ ۱۱٬۴۴۹ نقطه، ۰ اختلاف): **همه سبز، صفر خطای کنسول**
+- رندر واقعی: ۱۶۹ draw call / ~۱۴۹k مثلث در صحنهٔ دمو — داخل بودجهٔ §۹
+
+## اجرای دوبارهٔ تست‌ها
+```bash
+bash scripts/run_phase3_test.sh        # سرور تازه + شهر دمو + محلهٔ کاربردی + تست کامل UI
+bash scripts/run_phase2_test.sh        # سرور تازه + شهر دمو + دفاع فاز ۱ + کاخ/پل
+python3 scripts/test_phase3_server.py  # تست سرور فاز ۳ به‌تنهایی
+python3 scripts/test_phase2_server.py  # تست سرور فاز ۲ به‌تنهایی
+```
+
+## فایل‌های پروژه
+نسخهٔ اعمال‌شدهٔ نهایی در `project/tribe-world-main/` است — همهٔ فایل‌های تغییرکردهٔ هر سه فاز داخلش اعمال شده‌اند (تطبیق بایت‌به‌بایت با `phase3-changed-files/` تأیید شد). برای انتشار، کل پوشهٔ پروژه را با همین فایل‌ها بفرستید.

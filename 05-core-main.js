@@ -22,7 +22,13 @@ TWE.sys('world-ambient',{frame:(d,t)=>{{// نوار sheen حذف شد (آب بل
 for(const c of clouds){c.position.x+=d*WCD;if(c.position.x>90)c.position.x=-90}}});   // WCD = سرعت رانش ابر از باد (06-world-weather.js)
 // SWAY = دامنهٔ تاب باد (از 06-world-weather.js)
 // تاب بادی آیتم‌های sw-دار (درخت‌های کاشته‌شده/بنر): دو محور با فاز جدا = تکانِ طبیعی؛ دامنه از SWAY (با گوست باد — توفان = تابِ محسوس)
-TWE.sys('building-animation',{frame:(d,t)=>{const wxAmp=.026*SWAY;for(const g of objs.values())if(g.userData.sw!==undefined&&!g.userData.m){const ph=g.userData.sw;g.rotation.z=Math.sin(t*1.3+ph)*wxAmp;g.rotation.x=Math.cos(t*.83+ph*1.31)*wxAmp*.62}for(const g of objs.values()){const u=g.userData;if(u.t<1){u.t=Math.min(1,u.t+d*1.8);if(u.t<=0)continue;const e=1-Math.pow(1-u.t,3);g.scale.setScalar(Math.max(.01,e*(1+.12*Math.sin(u.t*Math.PI))));if(u.t>=1&&!u.q&&typeof CH!=='undefined'&&CH.mergeable(u.b.type)){u.q=1;CH.queue(g)}}}}});
+TWE.sys('building-animation',{frame:(d,t)=>{const wxAmp=.026*SWAY;for(const g of objs.values())if(g.userData.sw!==undefined&&!g.userData.m){const ph=g.userData.sw;g.rotation.z=Math.sin(t*1.3+ph)*wxAmp;g.rotation.x=Math.cos(t*.83+ph*1.31)*wxAmp*.62}
+// پرچم‌های تاب‌خور برج/دروازه/کاخ/پل (مجموعهٔ دفاعی و فاز ۲): فقط پیوتِ هر پرچم حول میلهٔ خودش می‌چرخد — بدنهٔ
+// سنگی ثابت می‌ماند (این سازه‌ها هرگز چانک نمی‌شوند). آرایهٔ flgs = هر سازه می‌تواند چند پرچم داشته باشد (کاخ ۳/پل ۲).
+for(const g of objs.values()){const fs=g.userData.flgs;if(!fs||g.userData.m)continue;for(const f of fs){f.rotation.y=Math.sin(t*2.1+f.userData.ph)*.27;f.rotation.z=Math.sin(t*1.6+f.userData.ph)*.06}}
+// پروانهٔ توربین بادی (فاز ۳): چرخش پیوسته حول محور z (~۲۱ دور در دقیقه) — توربین هرگز چانک نمی‌شود (الگوی پرچم‌ها)
+for(const g of objs.values()){const rs=g.userData.rotors;if(!rs||g.userData.m)continue;for(const r of rs)r.rotation.z-=d*2.2}
+for(const g of objs.values()){const u=g.userData;if(u.t<1){u.t=Math.min(1,u.t+d*1.8);if(u.t<=0)continue;const e=1-Math.pow(1-u.t,3);g.scale.setScalar(Math.max(.01,e*(1+.12*Math.sin(u.t*Math.PI))));if(u.t>=1&&!u.q&&typeof CH!=='undefined'&&CH.mergeable(u.b.type)){u.q=1;CH.queue(g)}}}}});
 TWE.sys('world-chunks',{frame:(d,t)=>CH.frame(d,t)});   // فاز ۲ — ارتقا/بازسازی بودجه‌ای چانک‌های دنیای ایستا (قبل از کنترل کیفیت و رندر)
 TWE.sys('quality-controller',{frame:d=>Q.frame(d)});
 // ── زیرسیستم‌های شبیه‌سازی (گام ثابت ۳۰Hz — مستقل از فریم‌نرخ) ──
